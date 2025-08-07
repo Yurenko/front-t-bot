@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://your-app-name.onrender.com"
+    ? "https://back-t-bot.onrender.com"
     : process.env.REACT_APP_API_URL || "http://localhost:3007";
 
 const api = axios.create({
