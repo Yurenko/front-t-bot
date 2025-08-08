@@ -36,3 +36,139 @@
     transform: rotate(360deg);
   }
 }
+
+/* Мобільні стилі */
+@media (max-width: 640px) {
+  /* Зменшуємо відступи для мобільних */
+  .mobile-p-2 {
+    padding: 0.5rem;
+  }
+
+  .mobile-p-3 {
+    padding: 0.75rem;
+  }
+
+  .mobile-p-4 {
+    padding: 1rem;
+  }
+
+  /* Зменшуємо розміри тексту */
+  .mobile-text-xs {
+    font-size: 0.75rem;
+  }
+
+  .mobile-text-sm {
+    font-size: 0.875rem;
+  }
+
+  .mobile-text-base {
+    font-size: 1rem;
+  }
+
+  /* Адаптуємо кнопки */
+  .mobile-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  /* Адаптуємо таблиці */
+  .mobile-table {
+    font-size: 0.75rem;
+  }
+
+  .mobile-table th,
+  .mobile-table td {
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Адаптуємо картки */
+  .mobile-card {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Адаптуємо сітки */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Покращення для тач-пристроїв */
+@media (hover: none) and (pointer: coarse) {
+  /* Збільшуємо області для тачів */
+  button,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Збільшуємо відступи між інтерактивними елементами */
+  .touch-spacing > * + * {
+    margin-top: 0.5rem;
+  }
+
+  /* Покращуємо фокус для тач-пристроїв */
+  input:focus,
+  button:focus,
+  select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Анімації для плавних переходів */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Покращення для скролу на мобільних */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Адаптація для маленьких екранів */
+@media (max-width: 480px) {
+  .xs-hidden {
+    display: none;
+  }
+
+  .xs-text-center {
+    text-align: center;
+  }
+
+  .xs-w-full {
+    width: 100%;
+  }
+
+  .xs-flex-col {
+    flex-direction: column;
+  }
+
+  .xs-space-y-2 > * + * {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Покращення для темної теми (якщо потрібно) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+
+  .dark-mode .bg-white {
+    background-color: #374151;
+  }
+
+  .dark-mode .text-gray-900 {
+    color: #f9fafb;
+  }
+
+  .dark-mode .text-gray-600 {
+    color: #d1d5db;
+  }
+}

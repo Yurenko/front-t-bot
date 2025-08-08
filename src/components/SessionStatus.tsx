@@ -103,16 +103,16 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
+    <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 space-y-3 sm:space-y-0">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800">
           Сесія {session.symbol}
         </h2>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
+            className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 text-sm"
           >
             {loading ? "Оновлення..." : "Оновити"}
           </button>
@@ -121,13 +121,13 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
               <button
                 onClick={handleAnalyze}
                 disabled={analyzing}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
               >
                 {analyzing ? "Аналіз..." : "Аналізувати"}
               </button>
               <button
                 onClick={handleCloseSession}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
               >
                 Закрити сесію
               </button>
@@ -137,7 +137,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       </div>
 
       {/* Статус сесії */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <span
           className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
             session.status
@@ -152,27 +152,31 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       </div>
 
       {/* Основна інформація */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-500">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+          <h3 className="text-xs md:text-sm font-medium text-gray-500">
             Початковий баланс
           </h3>
-          <p className="text-xl font-bold text-gray-900">
+          <p className="text-base md:text-xl font-bold text-gray-900">
             {formatCurrency(session.initialBalance)}
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-500">Поточний баланс</h3>
-          <p className="text-xl font-bold text-gray-900">
+        <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+          <h3 className="text-xs md:text-sm font-medium text-gray-500">
+            Поточний баланс
+          </h3>
+          <p className="text-base md:text-xl font-bold text-gray-900">
             {formatCurrency(session.currentBalance)}
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-500">Загальний P&L</h3>
+        <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+          <h3 className="text-xs md:text-sm font-medium text-gray-500">
+            Загальний P&L
+          </h3>
           <p
-            className={`text-xl font-bold ${
+            className={`text-base md:text-xl font-bold ${
               session.totalPnL >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
@@ -180,10 +184,10 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-500">ROI</h3>
+        <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+          <h3 className="text-xs md:text-sm font-medium text-gray-500">ROI</h3>
           <p
-            className={`text-xl font-bold ${
+            className={`text-base md:text-xl font-bold ${
               calculateCurrentROI() >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
@@ -193,17 +197,19 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       </div>
 
       {/* Детальна інформація */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
         <div>
-          <h3 className="text-lg font-semibold mb-3">Розподіл балансу</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-3">
+            Розподіл балансу
+          </h3>
           <div className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-gray-600">Торговий баланс:</span>
               <span className="font-medium">
                 {formatCurrency(session.tradingBalance)}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-gray-600">Резервний баланс:</span>
               <span className="font-medium">
                 {formatCurrency(session.reserveBalance)}
@@ -213,121 +219,109 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-3">Позиція</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-3">Позиція</h3>
           <div className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-gray-600">Розмір позиції:</span>
               <span className="font-medium">
-                {session.totalPositionSize
-                  ? session.totalPositionSize.toFixed(4)
-                  : "0.0000"}
+                {session.totalPositionSize.toFixed(4)}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Середня ціна входу:</span>
-              <span className="font-medium">
-                {session.averageEntryPrice
-                  ? formatCurrency(session.averageEntryPrice)
-                  : "Н/Д"}
-              </span>
-            </div>
-            <div className="flex justify-between">
+            {session.averageEntryPrice && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Середня ціна входу:</span>
+                <span className="font-medium">
+                  ${session.averageEntryPrice.toFixed(4)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm">
               <span className="text-gray-600">Кількість усереднень:</span>
-              <span className="font-medium">
-                {session.averagingCount || 0}/4
-              </span>
+              <span className="font-medium">{session.averagingCount}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Живий статус торгівлі */}
+      {/* Live Trading Status */}
       {session.status === "active" && (
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <LiveTradingStatus session={session} />
         </div>
       )}
 
-      {/* Історія угод */}
+      {/* Останні угоди */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Історія угод</h3>
-        {trades.length === 0 ? (
-          <p className="text-gray-500">Поки що немає угод</p>
-        ) : (
+        <h3 className="text-base md:text-lg font-semibold mb-3">
+          Останні угоди
+        </h3>
+        {trades.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Тип
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Сторона
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ціна
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Кількість
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Значення
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     P&L
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Дата
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {trades.map((trade) => (
+                {trades.slice(0, 5).map((trade) => (
                   <tr key={trade.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      {trade.type === "entry"
+                        ? "Вхід"
+                        : trade.type === "averaging"
+                        ? "Усереднення"
+                        : "Вихід"}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          trade.type === "entry"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          trade.side === "buy"
                             ? "bg-green-100 text-green-800"
-                            : trade.type === "averaging"
-                            ? "bg-yellow-100 text-yellow-800"
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {trade.type === "entry"
-                          ? "Вхід"
-                          : trade.type === "averaging"
-                          ? "Усереднення"
-                          : "Вихід"}
+                        {trade.side === "buy" ? "Купівля" : "Продаж"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(trade.price)}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      ${trade.price.toFixed(4)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {trade.quantity ? trade.quantity.toFixed(4) : "0.0000"}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      {trade.quantity.toFixed(4)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(trade.value)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {trade.pnl ? (
-                        <span
-                          className={
-                            trade.pnl >= 0 ? "text-green-600" : "text-red-600"
-                          }
-                        >
-                          {formatCurrency(trade.pnl)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(trade.createdAt).toLocaleString()}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      <span
+                        className={
+                          trade.pnl && trade.pnl >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
+                        {trade.pnl ? formatCurrency(trade.pnl) : "-"}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        ) : (
+          <p className="text-gray-500 text-sm">Немає угод для цієї сесії</p>
         )}
       </div>
     </div>

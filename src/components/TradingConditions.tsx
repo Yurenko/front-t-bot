@@ -175,10 +175,15 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
     return (satisfiedWeight / totalWeight) * 100;
   };
 
+  const getOverallPercentage = () => {
+    if (conditions.length === 0) return 0;
+    return (getOverallStatus() / 100) * 100; // Переводимо відсоток у відсоток
+  };
+
   const getStatusColor = (percentage: number) => {
-    if (percentage >= 80) return "text-green-600";
-    if (percentage >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (percentage >= 80) return "bg-green-500";
+    if (percentage >= 60) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   const getStatusIcon = (status: boolean) => {
@@ -210,141 +215,213 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
     );
   }
 
-  const overallStatus = getOverallStatus();
-
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Умови торгівлі {symbol}
-        </h2>
-        <div className="flex items-center space-x-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-600">Автооновлення</span>
-          </label>
-          <button
-            onClick={loadConditions}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
+    <div className="space-y-4 md:space-y-6">
+      {/* Контроли */}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <div>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
+              Умови торгівлі для {symbol}
+            </h2>
+            <p className="text-sm text-gray-600">
+              Аналіз поточних умов для входу в позицію
+            </p>
+            {lastUpdate && (
+              <p className="text-xs text-gray-500 mt-1">
+                Останнє оновлення: {new Date(lastUpdate).toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoRefresh"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">Автооновлення</span>
+            </label>
+            <button
+              onClick={loadConditions}
+              disabled={loading}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+            >
+              {loading ? "Оновлення..." : "Оновити"}
+            </button>
+          </div>
         </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Загальний статус */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-lg font-semibold text-gray-700">
-            Загальний статус
-          </span>
-          <span
-            className={`text-lg font-bold ${getStatusColor(overallStatus)}`}
-          >
-            {overallStatus.toFixed(1)}%
-          </span>
+      {conditions.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+            Загальний статус умов
+          </h3>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-2xl">
+                  {getStatusIcon(getOverallStatus() > 0)}
+                </span>
+                <span className="text-lg font-semibold text-gray-900">
+                  {getOverallStatus() > 0
+                    ? "Умови виконані"
+                    : "Умови не виконані"}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(
+                    getOverallPercentage()
+                  )}`}
+                  style={{ width: `${getOverallPercentage()}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Виконано: {getOverallPercentage().toFixed(1)}%
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3">
-          <div
-            className={`h-3 rounded-full transition-all duration-300 ${
-              overallStatus >= 80
-                ? "bg-green-500"
-                : overallStatus >= 60
-                ? "bg-yellow-500"
-                : "bg-red-500"
-            }`}
-            style={{ width: `${overallStatus}%` }}
-          ></div>
-        </div>
-      </div>
+      )}
 
       {/* Детальні умови */}
-      <div className="space-y-4">
-        {conditions.map((condition, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            <div className="flex items-center space-x-3">
-              <span className="text-xl">{getStatusIcon(condition.status)}</span>
-              <div>
-                <h3 className="font-medium text-gray-800">{condition.name}</h3>
-                <p className="text-sm text-gray-600">{condition.description}</p>
-                {condition.details && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {condition.details}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-sm font-medium text-gray-500">
-                Вага: {condition.weight}%
-              </span>
-              {condition.value && (
-                <div className="text-sm font-medium mt-1">
-                  <span
-                    className={
-                      condition.status ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {condition.value}
-                  </span>
+      {conditions.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+            Детальні умови
+          </h3>
+          <div className="space-y-4">
+            {conditions.map((condition, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-lg border-l-4 ${
+                  condition.status
+                    ? "bg-green-50 border-green-400"
+                    : "bg-red-50 border-red-400"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-lg">
+                        {getStatusIcon(condition.status)}
+                      </span>
+                      <h4 className="text-sm md:text-base font-semibold text-gray-900">
+                        {condition.name}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          condition.status
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {condition.weight}%
+                      </span>
+                    </div>
+                    <p className="text-xs md:text-sm text-gray-600 mb-2">
+                      {condition.description}
+                    </p>
+                    {condition.details && (
+                      <p className="text-xs text-gray-500 mb-1">
+                        {condition.details}
+                      </p>
+                    )}
+                    {condition.value && (
+                      <p className="text-xs font-medium text-gray-700">
+                        {condition.value}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              )}
-              <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                <div
-                  className={`h-2 rounded-full ${
-                    condition.status ? "bg-green-500" : "bg-red-500"
-                  }`}
-                  style={{ width: `${condition.weight}%` }}
-                ></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Рекомендації */}
+      {conditions.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+            Рекомендації
+          </h3>
+          <div className="space-y-3">
+            {getOverallStatus() > 0 ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <span className="text-green-500 text-lg">✅</span>
+                  <div>
+                    <h4 className="text-sm font-semibold text-green-800 mb-1">
+                      Умови для входу виконані
+                    </h4>
+                    <p className="text-xs text-green-700">
+                      Можна розглядати відкриття позиції. Рекомендується
+                      використовувати стратегію усереднення.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <span className="text-yellow-500 text-lg">⚠️</span>
+                  <div>
+                    <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                      Умови не виконані
+                    </h4>
+                    <p className="text-xs text-yellow-700">
+                      Рекомендується очікувати покращення умов або
+                      використовувати менший розмір позиції.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <span className="text-blue-500 text-lg">ℹ️</span>
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                    Стратегія усереднення
+                  </h4>
+                  <p className="text-xs text-blue-700">
+                    При падінні ціни на 2-3% можна додавати до позиції. Максимум
+                    4 усереднення.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Пояснення стратегії */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">
-          Стратегія "Коридорна торгівля"
-        </h3>
-        <div className="text-sm text-blue-700 space-y-1">
-          <p>• Бот шукає консолідацію (коридор) на ринку</p>
-          <p>• Заходить знизу коридору при сприятливих умовах</p>
-          <p>• Закриває позицію при досягненні 1-3% прибутку</p>
-          <p>• Використовує усереднення при падінні ціни</p>
         </div>
-      </div>
+      )}
 
-      {/* Інформація про оптимізацію */}
-      <div className="mt-4 p-3 bg-green-50 rounded-lg">
-        <div className="text-sm text-green-700 space-y-1">
-          <p>
-            • <strong>Кешування:</strong> Дані кешуються на 30 секунд
+      {/* Повідомлення про відсутність даних */}
+      {conditions.length === 0 && !loading && !error && (
+        <div className="bg-white rounded-lg shadow-md p-6 md:p-8 text-center">
+          <p className="text-gray-500 mb-4">
+            Немає даних для аналізу умов торгівлі
           </p>
-          <p>
-            • <strong>Автооновлення:</strong> Кожні 60 секунд
-          </p>
+          <button
+            onClick={loadConditions}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Завантажити аналіз
+          </button>
         </div>
-      </div>
-
-      {/* Останнє оновлення */}
-      <div className="mt-4 text-center">
-        <p className="text-xs text-gray-500">
-          Останнє оновлення:{" "}
-          {lastUpdate
-            ? new Date(lastUpdate).toLocaleString("uk-UA")
-            : "Немає даних"}
-        </p>
-      </div>
+      )}
     </div>
   );
 };

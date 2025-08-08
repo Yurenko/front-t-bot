@@ -316,272 +316,232 @@ const AllTradingConditions: React.FC<AllTradingConditionsProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Умови торгівлі для всіх сесій
-        </h2>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+    <div className="space-y-4 md:space-y-6">
+      {/* Контроли */}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <div>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
+              Умови торгівлі для всіх сесій
+            </h2>
+            <p className="text-sm text-gray-600">
+              Аналіз умов торгівлі для всіх активних сесій
+            </p>
+            {progress && (
+              <p className="text-xs text-gray-500 mt-1">
+                Прогрес: {progress.current}/{progress.total} сесій
+              </p>
+            )}
+          </div>
+          <div className="flex items-center space-x-3">
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
+                id="autoRefresh"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="text-sm text-gray-600">Автооновлення</span>
+              <span className="text-sm text-gray-700">Автооновлення</span>
             </label>
-            {autoRefresh && (
-              <span className="text-xs text-gray-500">(кожні 60с)</span>
-            )}
+            <button
+              onClick={loadAllAnalysis}
+              disabled={loading}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+            >
+              {loading ? "Аналіз..." : "Оновити"}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              if (!loading) {
-                loadAllAnalysis();
-              }
-            }}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
         </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {error}
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {loading && progress && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
-          <div className="flex items-center justify-between">
-            <span>Аналіз умов торгівлі...</span>
-            <span className="text-sm">
-              {progress.current}/{progress.total} сесій
-            </span>
-          </div>
-          <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(progress.current / progress.total) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      {/* Загальна статистика */}
+      {/* Статистика */}
       {sessionsConditions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
             Загальна статистика
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {activeSessions.length}
-              </div>
-              <div className="text-sm text-gray-600">Активних сесій</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <h4 className="text-xs font-medium text-blue-600 mb-1">
+                Всього сесій
+              </h4>
+              <p className="text-lg font-bold text-blue-900">
+                {sessionsConditions.length}
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-green-50 p-3 rounded-lg">
+              <h4 className="text-xs font-medium text-green-600 mb-1">
+                Готові
+              </h4>
+              <p className="text-lg font-bold text-green-900">
                 {
                   sessionsConditions.filter((s) => s.overallStatus === "ready")
                     .length
                 }
-              </div>
-              <div className="text-sm text-gray-600">Готові до входу</div>
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <h4 className="text-xs font-medium text-yellow-600 mb-1">
+                Частково
+              </h4>
+              <p className="text-lg font-bold text-yellow-900">
                 {
                   sessionsConditions.filter(
                     (s) => s.overallStatus === "partial"
                   ).length
                 }
-              </div>
-              <div className="text-sm text-gray-600">Частково готові</div>
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
+            <div className="bg-red-50 p-3 rounded-lg">
+              <h4 className="text-xs font-medium text-red-600 mb-1">
+                Не готові
+              </h4>
+              <p className="text-lg font-bold text-red-900">
                 {
                   sessionsConditions.filter(
                     (s) => s.overallStatus === "not-ready"
                   ).length
                 }
-              </div>
-              <div className="text-sm text-gray-600">Не готові</div>
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Умови для кожної сесії */}
-      <div className="space-y-6">
-        {sessionsConditions.map((sessionData, index) => (
-          <div
-            key={sessionData.session.id}
-            className="bg-white rounded-lg shadow-md p-6"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  {sessionData.session.symbol}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Баланс: $
-                  {sessionData.session.currentBalance?.toFixed(2) || "0.00"}
-                </p>
-              </div>
-              <div className="text-right">
-                <div
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    sessionData.overallStatus
-                  )}`}
-                >
-                  {getStatusText(sessionData.overallStatus)}
-                </div>
-                <div className="text-lg font-bold mt-1">
-                  {Math.round(sessionData.percentage)}%
-                </div>
-              </div>
-            </div>
-
-            {/* Загальний статус для сесії */}
+      {/* Список сесій */}
+      {sessionsConditions.length > 0 && (
+        <div className="space-y-4">
+          {sessionsConditions.map((sessionData, index) => (
             <div
-              className={`p-4 rounded-lg mb-4 ${getStatusColor(
-                sessionData.overallStatus
-              )}`}
+              key={sessionData.session.id}
+              className="bg-white rounded-lg shadow-md p-4 md:p-6"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <div className="flex items-center space-x-3 mb-2 sm:mb-0">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                    {sessionData.session.symbol}
+                  </h3>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      sessionData.overallStatus
+                    )}`}
+                  >
                     {getStatusText(sessionData.overallStatus)}
-                  </h4>
-                  <p className="text-sm opacity-75">
-                    {sessionData.conditions.filter((c) => c.isMet).length} з{" "}
-                    {sessionData.conditions.length} умов виконано
-                  </p>
+                  </span>
                 </div>
-                <div className="text-2xl font-bold">
-                  {Math.round(sessionData.percentage)}%
-                </div>
-              </div>
-            </div>
-
-            {/* Детальні умови */}
-            <div className="space-y-3">
-              {sessionData.conditions.map((condition, conditionIndex) => (
-                <div
-                  key={conditionIndex}
-                  className={`p-3 rounded-lg border ${
-                    condition.isMet
-                      ? "border-green-200 bg-green-50"
-                      : "border-red-200 bg-red-50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-800 mb-1">
-                        {condition.name}
-                      </h5>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {condition.description}
-                      </p>
-                      {condition.details && (
-                        <p className="text-xs text-gray-500">
-                          {condition.details}
-                        </p>
-                      )}
-                    </div>
-                    <div className="ml-4 text-right">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          condition.isMet
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {condition.value}
-                      </span>
-                    </div>
+                <div className="flex items-center space-x-2">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {sessionData.percentage.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {sessionData.conditions.filter((c) => c.isMet).length}/
+                      {sessionData.conditions.length} умов
+                    </p>
+                  </div>
+                  <div className="w-16 h-2 bg-gray-200 rounded-full">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        sessionData.percentage >= 80
+                          ? "bg-green-500"
+                          : sessionData.percentage >= 60
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                      style={{ width: `${sessionData.percentage}%` }}
+                    ></div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Поточні ціни */}
-            {sessionData.analysis.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                  Поточні дані ринку
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {sessionData.analysis.slice(0, 3).map((item, itemIndex) => (
-                    <div
-                      key={itemIndex}
-                      className="bg-white p-2 rounded border"
-                    >
-                      <div className="text-xs font-medium text-gray-600 mb-1">
-                        {item.timeframe}
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">
-                        ${item.currentPrice.toFixed(4)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {item.volatility === "high"
-                          ? "📊"
-                          : item.volatility === "medium"
-                          ? "📈"
-                          : "📉"}{" "}
-                        {item.volatility}
+              {/* Умови */}
+              <div className="space-y-3">
+                {sessionData.conditions.map((condition, conditionIndex) => (
+                  <div
+                    key={conditionIndex}
+                    className={`p-3 rounded-lg border-l-4 ${
+                      condition.isMet
+                        ? "bg-green-50 border-green-400"
+                        : "bg-red-50 border-red-400"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm">
+                            {condition.isMet ? "✅" : "❌"}
+                          </span>
+                          <h4 className="text-sm font-semibold text-gray-900">
+                            {condition.name}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-1">
+                          {condition.description}
+                        </p>
+                        {condition.details && (
+                          <p className="text-xs text-gray-500">
+                            {condition.details}
+                          </p>
+                        )}
+                        {condition.value && (
+                          <p className="text-xs font-medium text-gray-700 mt-1">
+                            {condition.value}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Рекомендації */}
+              <div className="mt-4 p-3 rounded-lg bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                  Рекомендації
+                </h4>
+                <div className="text-xs text-gray-600">
+                  {sessionData.overallStatus === "ready" ? (
+                    <p className="text-green-700">
+                      ✅ Умови виконані - можна розглядати відкриття позиції
+                    </p>
+                  ) : sessionData.overallStatus === "partial" ? (
+                    <p className="text-yellow-700">
+                      ⚠️ Частково готові умови - можна використовувати менший
+                      розмір позиції
+                    </p>
+                  ) : (
+                    <p className="text-red-700">
+                      ❌ Умови не виконані - рекомендується очікувати
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Пояснення стратегії */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">
-          Стратегія "Коридорна торгівля"
-        </h3>
-        <div className="text-sm text-blue-700 space-y-1">
-          <p>• Бот шукає консолідацію (коридор) на ринку</p>
-          <p>• Заходить знизу коридору при сприятливих умовах</p>
-          <p>• Закриває позицію при досягненні 1-3% прибутку</p>
-          <p>• Використовує усереднення при падінні ціни</p>
-          <p>• Сесія залишається активною після закриття позиції</p>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Інформація про оптимізацію */}
-      <div className="mt-4 p-4 bg-green-50 rounded-lg">
-        <h3 className="font-semibold text-green-800 mb-2">
-          Оптимізація продуктивності
-        </h3>
-        <div className="text-sm text-green-700 space-y-1">
-          <p>
-            • <strong>Кешування:</strong> Дані кешуються на 30 секунд для
-            зменшення навантаження
+      {/* Повідомлення про відсутність даних */}
+      {sessionsConditions.length === 0 && !loading && !error && (
+        <div className="bg-white rounded-lg shadow-md p-6 md:p-8 text-center">
+          <p className="text-gray-500 mb-4">
+            Немає активних сесій для аналізу умов торгівлі
           </p>
-          <p>
-            • <strong>Оптимізація:</strong> Запити виконуються партіями по 3 для
-            уникнення rate limiting
-          </p>
-          <p>
-            • <strong>Автооновлення:</strong> Кожні 60 секунд для зменшення
-            навантаження на API
-          </p>
+          <button
+            onClick={loadAllAnalysis}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Завантажити аналіз
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -159,170 +159,142 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Логи торгівлі {symbol}
-        </h2>
-        <div className="flex items-center space-x-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-600">Автооновлення</span>
-          </label>
-          <button
-            onClick={loadTrades}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
+    <div className="space-y-4 md:space-y-6">
+      {/* Контроли */}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <div>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
+              Логи торгівлі для {symbol}
+            </h2>
+            <p className="text-sm text-gray-600">
+              Останні угоди та системні повідомлення
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoRefresh"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">Автооновлення</span>
+            </label>
+            <button
+              onClick={loadTrades}
+              disabled={loading}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+            >
+              {loading ? "Оновлення..." : "Оновити"}
+            </button>
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      {/* Статистика торгівлі */}
-      {trades.length > 0 && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-            Статистика торгівлі
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-3 rounded border">
-              <div className="text-sm font-medium text-gray-600">
-                Всього операцій
-              </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {trades.length}
-              </div>
-            </div>
-            <div className="bg-white p-3 rounded border">
-              <div className="text-sm font-medium text-gray-600">
-                Входи в позицію
-              </div>
-              <div className="text-2xl font-bold text-blue-600">
-                {trades.filter((t) => t.type === "entry").length}
-              </div>
-            </div>
-            <div className="bg-white p-3 rounded border">
-              <div className="text-sm font-medium text-gray-600">
-                Усереднення
-              </div>
-              <div className="text-2xl font-bold text-yellow-600">
-                {trades.filter((t) => t.type === "averaging").length}
-              </div>
-            </div>
-            <div className="bg-white p-3 rounded border">
-              <div className="text-sm font-medium text-gray-600">Виходи</div>
-              <div className="text-2xl font-bold text-green-600">
-                {trades.filter((t) => t.type === "exit").length}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Логи */}
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {logs.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            Поки що немає логів торгівлі
-          </div>
-        ) : (
-          logs.map((log) => (
-            <div
-              key={log.id}
-              className={`p-4 rounded-lg border ${getLogTypeColor(log.type)}`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3 flex-1">
-                  <span className="text-lg">{getLogTypeIcon(log.type)}</span>
-                  <div className="flex-1">
-                    <p className="font-medium">{log.message}</p>
-                    <p className="text-sm opacity-75 mt-1">
-                      {formatDateTime(log.timestamp)}
-                    </p>
-                    {log.details &&
-                      log.details.type === "exit" &&
-                      log.details.pnl && (
-                        <p
-                          className={`text-sm font-medium mt-1 ${
-                            log.details.pnl > 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          P&L: ${log.details.pnl.toFixed(2)}
-                          {log.details.roi &&
-                            ` (ROI: ${(log.details.roi * 100).toFixed(2)}%)`}
-                        </p>
-                      )}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+          Історія логів
+        </h3>
+        {logs.length > 0 ? (
+          <div className="space-y-3">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className={`p-3 md:p-4 rounded-lg border-l-4 ${
+                  log.type === "error"
+                    ? "bg-red-50 border-red-400"
+                    : log.type === "warning"
+                    ? "bg-yellow-50 border-yellow-400"
+                    : log.type === "success"
+                    ? "bg-green-50 border-green-400"
+                    : "bg-blue-50 border-blue-400"
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <span className="text-lg">{getLogTypeIcon(log.type)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm md:text-base font-medium text-gray-900">
+                        {log.message}
+                      </p>
+                      <span className="text-xs text-gray-500 ml-2">
+                        {formatDateTime(log.timestamp)}
+                      </span>
+                    </div>
+                    {log.details && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        {log.details.type && (
+                          <span className="inline-block bg-gray-100 px-2 py-1 rounded mr-2">
+                            {getTradeTypeLabel(log.details.type)}
+                          </span>
+                        )}
+                        {log.details.side && (
+                          <span
+                            className={`inline-block px-2 py-1 rounded ${
+                              log.details.side === "buy"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {getTradeSideLabel(log.details.side)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-                {log.details && log.details.type && (
-                  <div className="ml-4 text-right">
-                    <span className="px-2 py-1 rounded text-xs bg-white bg-opacity-50">
-                      {getTradeTypeLabel(log.details.type)}
-                    </span>
-                  </div>
-                )}
               </div>
-            </div>
-          ))
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm">Немає логів для відображення</p>
         )}
       </div>
 
-      {/* Детальна таблиця торгівлі */}
-      {trades.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-            Детальна таблиця торгівлі
-          </h3>
+      {/* Таблиця угод */}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+          Останні угоди
+        </h3>
+        {trades.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Дата
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Тип
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Сторона
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ціна
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Кількість
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Значення
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     P&L
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {trades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {formatDateTime(trade.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
+              <tbody className="bg-white divide-y divide-gray-200">
+                {trades.slice(0, 10).map((trade) => (
+                  <tr key={trade.id}>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
                           trade.type === "entry"
                             ? "bg-blue-100 text-blue-800"
                             : trade.type === "averaging"
@@ -333,38 +305,43 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
                         {getTradeTypeLabel(trade.type)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {getTradeSideLabel(trade.side)}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          trade.side === "buy"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {getTradeSideLabel(trade.side)}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       ${trade.price.toFixed(4)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       {trade.quantity.toFixed(4)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      ${trade.value.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {trade.pnl ? (
-                        <span
-                          className={`font-medium ${
-                            trade.pnl > 0 ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          ${trade.pnl.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                      <span
+                        className={
+                          trade.pnl && trade.pnl >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
+                        {trade.pnl ? `$${trade.pnl.toFixed(2)}` : "-"}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-gray-500 text-sm">Немає угод для відображення</p>
+        )}
+      </div>
     </div>
   );
 };

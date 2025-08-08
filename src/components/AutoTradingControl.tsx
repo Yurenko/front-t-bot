@@ -97,202 +97,219 @@ const AutoTradingControl: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Автоматичний аналіз торгівлі
-        </h2>
-        <div className="flex items-center space-x-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-600">Автооновлення</span>
-          </label>
-          <button
-            onClick={loadStatus}
-            disabled={loading}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
-          >
-            Оновити
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Статус */}
-      {status && (
-        <div className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {status.isRunning ? "🟢 Активний" : "🔴 Зупинений"}
-              </div>
-              <div className="text-sm text-gray-600">Статус</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {status.activeSessions}
-              </div>
-              <div className="text-sm text-gray-600">Активних сесій</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-lg font-bold text-gray-600">
-                {formatLastUpdate(status.lastUpdate)}
-              </div>
-              <div className="text-sm text-gray-600">Останнє оновлення</div>
-            </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* Контроли */}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <div>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
+              Автоматичний аналіз торгівлі
+            </h2>
+            <p className="text-sm text-gray-600">
+              Автоматичний моніторинг та аналіз активних сесій
+            </p>
           </div>
-
-          {/* Статистика аналізів */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-bold text-blue-600">
-                {status.totalAnalyses}
-              </div>
-              <div className="text-sm text-gray-600">Всього аналізів</div>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-lg font-bold text-green-600">
-                {status.successfulAnalyses}
-              </div>
-              <div className="text-sm text-gray-600">Успішних</div>
-            </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <div className="text-lg font-bold text-red-600">
-                {status.failedAnalyses}
-              </div>
-              <div className="text-sm text-gray-600">Помилок</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Налаштування інтервалу */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Налаштування інтервалу
-        </h3>
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Інтервал аналізу
-            </label>
-            <div className="flex space-x-2">
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2">
               <input
-                type="number"
-                value={intervalMs}
-                onChange={(e) => setIntervalMs(Number(e.target.value))}
-                min="5000"
-                max="300000"
-                step="5000"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="checkbox"
+                id="autoRefresh"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="px-3 py-2 text-gray-600">
-                {formatInterval(intervalMs)}
-              </span>
-            </div>
-          </div>
-          {status?.isRunning && (
+              <span className="text-sm text-gray-700">Автооновлення</span>
+            </label>
             <button
-              onClick={handleUpdateInterval}
+              onClick={loadStatus}
               disabled={loading}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50"
+              className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 text-sm"
             >
-              Оновити інтервал
+              Оновити
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Кнопки управління */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-3">
+          {status?.isRunning ? (
+            <button
+              onClick={handleStop}
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {loading ? "Зупинка..." : "Зупинити автоаналіз"}
+            </button>
+          ) : (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {loading ? "Запуск..." : "Запустити автоаналіз"}
             </button>
           )}
         </div>
 
-        {/* Швидкі налаштування */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setIntervalMs(10000)}
-            className={`px-3 py-1 rounded text-sm ${
-              intervalMs === 10000
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            10с
-          </button>
-          <button
-            onClick={() => setIntervalMs(30000)}
-            className={`px-3 py-1 rounded text-sm ${
-              intervalMs === 30000
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            30с
-          </button>
-          <button
-            onClick={() => setIntervalMs(60000)}
-            className={`px-3 py-1 rounded text-sm ${
-              intervalMs === 60000
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            1хв
-          </button>
-          <button
-            onClick={() => setIntervalMs(300000)}
-            className={`px-3 py-1 rounded text-sm ${
-              intervalMs === 300000
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            5хв
-          </button>
-        </div>
-      </div>
-
-      {/* Кнопки управління */}
-      <div className="flex space-x-4">
-        {!status?.isRunning ? (
-          <button
-            onClick={handleStart}
-            disabled={loading}
-            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 font-medium"
-          >
-            {loading ? "Запуск..." : "Запустити автоматичний аналіз"}
-          </button>
-        ) : (
-          <button
-            onClick={handleStop}
-            disabled={loading}
-            className="flex-1 px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 font-medium"
-          >
-            {loading ? "Зупинка..." : "Зупинити автоматичний аналіз"}
-          </button>
+        {/* Налаштування інтервалу */}
+        {status?.isRunning && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h3 className="text-sm font-semibold text-blue-900 mb-3">
+              Налаштування інтервалу
+            </h3>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-blue-700 mb-1">
+                  Інтервал аналізу (мс)
+                </label>
+                <input
+                  type="number"
+                  min="5000"
+                  max="300000"
+                  step="5000"
+                  value={intervalMs}
+                  onChange={(e) =>
+                    setIntervalMs(parseInt(e.target.value) || 30000)
+                  }
+                  className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <button
+                onClick={handleUpdateInterval}
+                disabled={loading}
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+              >
+                Оновити
+              </button>
+            </div>
+            <p className="text-xs text-blue-600 mt-2">
+              Поточний інтервал: {formatInterval(intervalMs)}
+            </p>
+          </div>
         )}
       </div>
 
-      {/* Інформація */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-semibold text-blue-800 mb-2">
-          ℹ️ Як працює автоматичний аналіз
-        </h4>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>
-            • Бот автоматично перевіряє умови торгівлі для всіх активних сесій
-          </li>
-          <li>• При виконанні умов бот автоматично відкриває позиції</li>
-          <li>• При зміні умов бот може усереднювати або закривати позиції</li>
-          <li>• Рекомендований інтервал: 30 секунд для швидкої реакції</li>
-          <li>• Мінімальний інтервал: 5 секунд (не рекомендується)</li>
-        </ul>
-      </div>
+      {/* Статус */}
+      {status && (
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+            Статус автоаналізу
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Статус */}
+            <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+              <h4 className="text-xs font-medium text-gray-500 mb-1">Статус</h4>
+              <div className="flex items-center space-x-2">
+                <span
+                  className={`w-3 h-3 rounded-full ${
+                    status.isRunning ? "bg-green-500" : "bg-red-500"
+                  }`}
+                ></span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {status.isRunning ? "Активний" : "Неактивний"}
+                </span>
+              </div>
+            </div>
+
+            {/* Активні сесії */}
+            <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
+              <h4 className="text-xs font-medium text-blue-600 mb-1">
+                Активні сесії
+              </h4>
+              <p className="text-lg font-bold text-blue-900">
+                {status.activeSessions}
+              </p>
+            </div>
+
+            {/* Інтервал */}
+            <div className="bg-yellow-50 p-3 md:p-4 rounded-lg">
+              <h4 className="text-xs font-medium text-yellow-600 mb-1">
+                Інтервал
+              </h4>
+              <p className="text-sm font-semibold text-yellow-900">
+                {formatInterval(status.intervalMs)}
+              </p>
+            </div>
+
+            {/* Останнє оновлення */}
+            <div className="bg-green-50 p-3 md:p-4 rounded-lg">
+              <h4 className="text-xs font-medium text-green-600 mb-1">
+                Останнє оновлення
+              </h4>
+              <p className="text-sm font-semibold text-green-900">
+                {formatLastUpdate(status.lastUpdate)}
+              </p>
+            </div>
+          </div>
+
+          {/* Статистика */}
+          <div className="mt-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+              Статистика аналізів
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h5 className="text-xs font-medium text-gray-500 mb-1">
+                  Всього аналізів
+                </h5>
+                <p className="text-lg font-bold text-gray-900">
+                  {status.totalAnalyses}
+                </p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <h5 className="text-xs font-medium text-green-600 mb-1">
+                  Успішних
+                </h5>
+                <p className="text-lg font-bold text-green-900">
+                  {status.successfulAnalyses}
+                </p>
+              </div>
+              <div className="bg-red-50 p-3 rounded-lg">
+                <h5 className="text-xs font-medium text-red-600 mb-1">
+                  Невдач
+                </h5>
+                <p className="text-lg font-bold text-red-900">
+                  {status.failedAnalyses}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Прогрес-бар успішності */}
+          {status.totalAnalyses > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium text-gray-700">
+                  Успішність
+                </span>
+                <span className="text-xs text-gray-500">
+                  {Math.round(
+                    (status.successfulAnalyses / status.totalAnalyses) * 100
+                  )}
+                  %
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${
+                      (status.successfulAnalyses / status.totalAnalyses) * 100
+                    }%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
