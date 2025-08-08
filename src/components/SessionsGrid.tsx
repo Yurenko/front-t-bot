@@ -295,3 +295,4 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
 };
 
 export default SessionsGrid;
+
