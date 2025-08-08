@@ -193,7 +193,9 @@ export const tradingApi = {
         name: string;
         address: string;
         family: string;
+        internal: boolean;
       }>;
+      externalIP: string | null;
       binanceApiUrl: string;
       binanceTestnet: boolean;
       hasApiKey: boolean;

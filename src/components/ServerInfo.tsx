@@ -9,7 +9,9 @@ interface ServerInfo {
     name: string;
     address: string;
     family: string;
+    internal: boolean;
   }>;
+  externalIP: string | null;
   binanceApiUrl: string;
   binanceTestnet: boolean;
   hasApiKey: boolean;
@@ -125,14 +127,40 @@ const ServerInfo: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-700">
             IP адреси сервера
           </h3>
+          {serverInfo.externalIP && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+              <div className="flex justify-between items-center">
+                <span className="text-green-800 font-semibold">
+                  Зовнішня IP:
+                </span>
+                <span className="font-mono text-sm text-green-600 font-bold">
+                  {serverInfo.externalIP}
+                </span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                Це IP адреса, яку бачить зовнішній світ
+              </p>
+            </div>
+          )}
           {serverInfo.addresses.length > 0 ? (
             <div className="space-y-2">
               {serverInfo.addresses.map((addr, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                  className={`flex justify-between items-center p-2 rounded ${
+                    addr.internal
+                      ? "bg-yellow-50 border border-yellow-200"
+                      : "bg-gray-50"
+                  }`}
                 >
-                  <span className="text-gray-600 text-sm">{addr.name}:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600 text-sm">{addr.name}:</span>
+                    {addr.internal && (
+                      <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">
+                        Internal
+                      </span>
+                    )}
+                  </div>
                   <span className="font-mono text-sm text-blue-600">
                     {addr.address}
                   </span>
@@ -210,7 +238,10 @@ const ServerInfo: React.FC = () => {
             <div className="mt-3 p-2 bg-white rounded border">
               <p className="text-xs text-gray-600 font-mono">
                 IP для додавання в Binance:{" "}
-                {serverInfo.addresses[0]?.address || "Не знайдено"}
+                {serverInfo.externalIP ||
+                  serverInfo.addresses.find((addr) => !addr.internal)
+                    ?.address ||
+                  "Не знайдено"}
               </p>
             </div>
           </div>
