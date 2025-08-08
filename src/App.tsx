@@ -10,6 +10,7 @@ import TotalBalance from "./components/TotalBalance";
 import AutoTradingControl from "./components/AutoTradingControl";
 import ActiveSessionsROI from "./components/ActiveSessionsROI";
 import SessionsGrid from "./components/SessionsGrid";
+import ServerInfo from "./components/ServerInfo";
 import { tradingApi, TradingSession } from "./services/api";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
     | "balance"
     | "auto-trading"
     | "roi"
+    | "server"
   >("sessions");
   const [loading, setLoading] = useState(false);
 
@@ -158,6 +160,16 @@ function App() {
               >
                 ROI
               </button>
+              <button
+                onClick={() => setActiveTab("server")}
+                className={`px-4 py-2 rounded-md font-medium ${
+                  activeTab === "server"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Сервер
+              </button>
             </div>
           </div>
         </div>
@@ -287,6 +299,12 @@ function App() {
         {activeTab === "roi" && (
           <div className="space-y-6">
             <ActiveSessionsROI />
+          </div>
+        )}
+
+        {activeTab === "server" && (
+          <div className="space-y-6">
+            <ServerInfo />
           </div>
         )}
       </main>

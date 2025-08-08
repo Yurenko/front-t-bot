@@ -184,6 +184,22 @@ export const tradingApi = {
   getActiveSessionsWithROI: () =>
     api.get<ActiveSessionWithROI[]>("/trading/active-sessions-roi"),
 
+  getServerInfo: () =>
+    api.get<{
+      serverTime: string;
+      environment: string;
+      port: number;
+      addresses: Array<{
+        name: string;
+        address: string;
+        family: string;
+      }>;
+      binanceApiUrl: string;
+      binanceTestnet: boolean;
+      hasApiKey: boolean;
+      hasApiSecret: boolean;
+    }>("/trading/server-info"),
+
   // Аналіз ринку
   getMarketAnalysis: (symbol: string) =>
     api.get<MarketAnalysis[]>("/trading/market/analysis/" + symbol),
