@@ -10,6 +10,7 @@ import TotalBalance from "./components/TotalBalance";
 import AutoTradingControl from "./components/AutoTradingControl";
 import ActiveSessionsROI from "./components/ActiveSessionsROI";
 import SessionsGrid from "./components/SessionsGrid";
+import TakeProfitInfo from "./components/TakeProfitInfo";
 import { tradingApi, TradingSession } from "./services/api";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
     | "balance"
     | "auto-trading"
     | "roi"
+    | "take-profit"
   >("sessions");
   const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -83,6 +85,7 @@ function App() {
     { id: "balance", label: "Баланс", icon: "💰" },
     { id: "auto-trading", label: "Автоаналіз", icon: "🤖" },
     { id: "roi", label: "ROI", icon: "📊" },
+    { id: "take-profit", label: "Take-Profit", icon: "🎯" },
   ];
 
   return (
@@ -283,6 +286,12 @@ function App() {
         {activeTab === "roi" && (
           <div className="space-y-4 md:space-y-6">
             <ActiveSessionsROI />
+          </div>
+        )}
+
+        {activeTab === "take-profit" && (
+          <div className="space-y-4 md:space-y-6">
+            <TakeProfitInfo />
           </div>
         )}
       </main>
