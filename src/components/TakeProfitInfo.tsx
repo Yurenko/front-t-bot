@@ -117,3 +117,4 @@ const TakeProfitInfo: React.FC = () => {
 };
 
 export default TakeProfitInfo;
+
