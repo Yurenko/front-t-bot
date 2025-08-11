@@ -228,7 +228,10 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                 Поточна ціна
               </h4>
               <p className="text-lg font-bold text-blue-900">
-                ${status.currentPrice.toFixed(4)}
+                $
+                {status.currentPrice
+                  ? status.currentPrice.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
@@ -252,7 +255,9 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                 Розмір позиції
               </h4>
               <p className="text-lg font-bold text-purple-900">
-                {status.positionSize.toFixed(4)}
+                {status.positionSize
+                  ? status.positionSize.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
           </div>
@@ -264,7 +269,10 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Ціна входу:</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    ${status.entryPrice.toFixed(4)}
+                    $
+                    {status.entryPrice
+                      ? status.entryPrice.toFixed(4)
+                      : "0.0000"}
                   </span>
                 </div>
               )}
@@ -287,7 +295,10 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                       status.distanceToLiquidation
                     )}`}
                   >
-                    ${status.liquidationPrice.toFixed(4)}
+                    $
+                    {status.liquidationPrice
+                      ? status.liquidationPrice.toFixed(4)
+                      : "0.0000"}
                   </span>
                 </div>
               )}
@@ -317,7 +328,10 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                       status.distanceToLiquidation
                     )}`}
                   >
-                    {status.distanceToLiquidation.toFixed(2)}%
+                    {status.distanceToLiquidation
+                      ? status.distanceToLiquidation.toFixed(2)
+                      : "0.00"}
+                    %
                   </span>
                 </div>
               )}

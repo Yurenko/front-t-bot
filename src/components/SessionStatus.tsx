@@ -224,7 +224,9 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Розмір позиції:</span>
               <span className="font-medium">
-                {session.totalPositionSize.toFixed(4)}
+                {session.totalPositionSize
+                  ? session.totalPositionSize.toFixed(4)
+                  : "0.0000"}
               </span>
             </div>
             {session.averageEntryPrice && (
@@ -299,10 +301,10 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
-                      ${trade.price.toFixed(4)}
+                      ${trade.price ? trade.price.toFixed(4) : "0.0000"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
-                      {trade.quantity.toFixed(4)}
+                      {trade.quantity ? trade.quantity.toFixed(4) : "0.0000"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       <span
