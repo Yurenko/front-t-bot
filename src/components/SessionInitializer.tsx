@@ -179,8 +179,8 @@ const SessionInitializer: React.FC<SessionInitializerProps> = ({
           <div className="text-xs text-blue-700 space-y-1">
             <p>• Початковий баланс: ${initialBalance.toFixed(2)}</p>
             <p>• Торгова стратегія: Усереднення без стоплосу</p>
-            <p>• Максимальна кількість усереднень: 4</p>
-            <p>• Резервний баланс: ${(initialBalance * 0.2).toFixed(2)}</p>
+            <p>• Максимальна кількість усереднень: 10</p>
+            <p>• Резервний баланс: ${(initialBalance * 0.75).toFixed(2)}</p>
           </div>
         </div>
       </form>
@@ -191,7 +191,7 @@ const SessionInitializer: React.FC<SessionInitializerProps> = ({
         </h3>
         <ul className="text-sm text-blue-700 space-y-1">
           <li>• Плече: 3x</li>
-          <li>• Максимум 4 усереднення</li>
+          <li>• Максимум 10 усереднень</li>
           <li>• Тейк-профіт: 3-9% ROI (1-3% рух ринку)</li>
           <li>• Максимум 3 активні позиції</li>
           <li>• Без стоп-лосів</li>

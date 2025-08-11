@@ -125,6 +125,7 @@ export interface ActiveSessionWithROI {
   initialBalance: number;
   currentBalance: number;
   tradingBalance: number;
+  reserveBalance: number;
 }
 
 export interface BinancePosition {

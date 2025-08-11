@@ -87,7 +87,7 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
           unrealizedPnL,
           roi,
           averagingCount,
-          maxAveraging: 4,
+          maxAveraging: 10,
           liquidationPrice,
           distanceToLiquidation,
           marketAnalysis: analysis,

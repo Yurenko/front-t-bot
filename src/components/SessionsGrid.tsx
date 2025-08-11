@@ -76,7 +76,7 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
       id: session.sessionId,
       symbol: session.symbol,
       initialBalance: session.initialBalance,
-      reserveBalance: 0, // Не використовується в ROI
+      reserveBalance: session.reserveBalance || 0,
       tradingBalance: session.tradingBalance,
       currentBalance: session.currentBalance,
       totalPnL: session.totalPnL,
@@ -263,6 +263,10 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
                   <div className="flex justify-between">
                     <span>Торговий:</span>
                     <span>{formatCurrency(session.tradingBalance)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Резерв:</span>
+                    <span>{formatCurrency(session.reserveBalance || 0)}</span>
                   </div>
                 </div>
 
