@@ -54,6 +54,7 @@ export interface TradingSession {
   totalPositionSize: number;
   averagingCount: number;
   liquidationPrice: number | null;
+  enableVolatilityCheck?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -240,6 +241,12 @@ export const tradingApi = {
 
   updateAutoTradingInterval: (intervalMs: number) =>
     api.post("/trading/auto-trading/interval", { intervalMs }),
+
+  // Налаштування волатильності
+  updateVolatilityCheck: (sessionId: string, enableVolatilityCheck: boolean) =>
+    api.post(`/trading/session/${sessionId}/volatility-check`, {
+      enableVolatilityCheck,
+    }),
 };
 
 export default api;

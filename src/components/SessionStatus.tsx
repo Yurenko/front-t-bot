@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { tradingApi, TradingSession, Trade } from "../services/api";
 import LiveTradingStatus from "./LiveTradingStatus";
+import VolatilitySettings from "./VolatilitySettings";
 
 interface SessionStatusProps {
   session: TradingSession;
@@ -249,6 +250,18 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       {session.status === "active" && (
         <div className="mb-4 md:mb-6">
           <LiveTradingStatus session={session} />
+        </div>
+      )}
+
+      {/* Налаштування волатильності */}
+      {session.status === "active" && (
+        <div className="mb-4 md:mb-6">
+          <VolatilitySettings
+            sessionId={session.id}
+            symbol={session.symbol}
+            enableVolatilityCheck={session.enableVolatilityCheck ?? true}
+            onUpdate={onRefresh}
+          />
         </div>
       )}
 
