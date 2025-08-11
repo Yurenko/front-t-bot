@@ -85,6 +85,7 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
       totalPositionSize: session.positionSize || 0,
       averagingCount: session.hasPosition ? 1 : 0,
       liquidationPrice: null,
+      enableVolatilityCheck: session.enableVolatilityCheck,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
