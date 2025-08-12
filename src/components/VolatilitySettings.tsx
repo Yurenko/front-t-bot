@@ -17,6 +17,11 @@ const VolatilitySettings: React.FC<VolatilitySettingsProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isChecked, setIsChecked] = useState(enableVolatilityCheck);
 
+  // Оновлюємо локальний стан коли змінюється prop
+  React.useEffect(() => {
+    setIsChecked(enableVolatilityCheck);
+  }, [enableVolatilityCheck]);
+
   const handleToggle = async () => {
     setIsUpdating(true);
     try {

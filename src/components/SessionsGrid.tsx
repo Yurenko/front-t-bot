@@ -70,26 +70,58 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
     return `${(value * 100).toFixed(2)}%`;
   };
 
-  const handleSessionClick = (session: ActiveSessionWithROI) => {
-    // Конвертуємо ActiveSessionWithROI в TradingSession
-    const tradingSession: TradingSession = {
-      id: session.sessionId,
-      symbol: session.symbol,
-      initialBalance: session.initialBalance,
-      reserveBalance: session.reserveBalance || 0,
-      tradingBalance: session.tradingBalance,
-      currentBalance: session.currentBalance,
-      totalPnL: session.totalPnL,
-      status: session.status as "active" | "closed" | "liquidated",
-      averageEntryPrice: session.entryPrice || null,
-      totalPositionSize: session.positionSize || 0,
-      averagingCount: session.hasPosition ? 1 : 0,
-      liquidationPrice: null,
-      enableVolatilityCheck: session.enableVolatilityCheck,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    onSessionSelect(tradingSession);
+  const handleSessionClick = async (session: ActiveSessionWithROI) => {
+    try {
+      // Отримуємо актуальні дані сесії з сервера
+      const response = await tradingApi.getSessionStatus(session.symbol);
+      if (response.data) {
+        onSessionSelect({
+          ...response.data,
+          id: response.data.id || session.sessionId,
+        });
+      } else {
+        // Якщо не вдалося отримати дані, використовуємо дані з сітки
+        const tradingSession: TradingSession = {
+          id: session.sessionId,
+          symbol: session.symbol,
+          initialBalance: session.initialBalance,
+          reserveBalance: session.reserveBalance || 0,
+          tradingBalance: session.tradingBalance,
+          currentBalance: session.currentBalance,
+          totalPnL: session.totalPnL,
+          status: session.status as "active" | "closed" | "liquidated",
+          averageEntryPrice: session.entryPrice || null,
+          totalPositionSize: session.positionSize || 0,
+          averagingCount: session.hasPosition ? 1 : 0,
+          liquidationPrice: null,
+          enableVolatilityCheck: session.enableVolatilityCheck ?? true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        onSessionSelect(tradingSession);
+      }
+    } catch (error) {
+      console.error("Помилка отримання даних сесії:", error);
+      // Використовуємо дані з сітки як fallback
+      const tradingSession: TradingSession = {
+        id: session.sessionId,
+        symbol: session.symbol,
+        initialBalance: session.initialBalance,
+        reserveBalance: session.reserveBalance || 0,
+        tradingBalance: session.tradingBalance,
+        currentBalance: session.currentBalance,
+        totalPnL: session.totalPnL,
+        status: session.status as "active" | "closed" | "liquidated",
+        averageEntryPrice: session.entryPrice || null,
+        totalPositionSize: session.positionSize || 0,
+        averagingCount: session.hasPosition ? 1 : 0,
+        liquidationPrice: null,
+        enableVolatilityCheck: session.enableVolatilityCheck ?? true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      onSessionSelect(tradingSession);
+    }
   };
 
   if (loading) {

@@ -67,8 +67,25 @@ function App() {
     setActiveTab("sessions");
   };
 
-  const handleRefresh = () => {
-    loadSessions();
+  const handleRefresh = async () => {
+    await loadSessions();
+
+    // Якщо є обрана сесія, оновлюємо її дані
+    if (selectedSession) {
+      try {
+        const response = await tradingApi.getSessionStatus(
+          selectedSession.symbol
+        );
+        if (response.data) {
+          setSelectedSession({
+            ...response.data,
+            id: response.data.id || selectedSession.id,
+          });
+        }
+      } catch (error) {
+        console.error("Помилка оновлення обраної сесії:", error);
+      }
+    }
   };
 
   const handleTabChange = (tab: typeof activeTab) => {
