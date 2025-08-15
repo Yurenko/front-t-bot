@@ -13,7 +13,6 @@
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@types/recharts": "^1.8.29",
-    "@types/socket.io-client": "^1.4.36",
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.11.0",
@@ -53,6 +52,7 @@
     ]
   },
   "devDependencies": {
+    "@types/socket.io-client": "^1.4.36",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.0.0",
     "gh-pages": "^6.3.0",

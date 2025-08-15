@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, TradingSession } from "../services/api";
+import { TradingSession } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface SessionInitializerProps {
   onSessionCreated: (session: TradingSession) => void;
@@ -23,8 +24,8 @@ const SessionInitializer: React.FC<SessionInitializerProps> = ({
   const loadAvailableSymbols = async () => {
     try {
       setLoadingSymbols(true);
-      const response = await tradingApi.getAvailableSymbols();
-      setAvailableSymbols(response.data);
+      const data = await websocketService.getAvailableSymbols();
+      setAvailableSymbols(data);
     } catch (error) {
       console.error("Помилка завантаження символів:", error);
       // Fallback до базового списку
@@ -55,17 +56,18 @@ const SessionInitializer: React.FC<SessionInitializerProps> = ({
     setError(null);
 
     try {
-      const response = await tradingApi.initializeSession(
+      const data = await websocketService.initializeSession(
         symbol,
-        initialBalance
+        initialBalance,
+        initialBalance * 0.3 // 30% від початкового балансу як резерв
       );
-      onSessionCreated(response.data);
+      onSessionCreated(data);
 
       // Очищаємо форму
       setSymbol("BTCUSDT");
       setInitialBalance(1000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка ініціалізації сесії");
+      setError(err.message || "Помилка ініціалізації сесії");
     } finally {
       setLoading(false);
     }

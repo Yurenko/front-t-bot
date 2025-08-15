@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, TradingSession, MarketAnalysis } from "../services/api";
+import { TradingSession, MarketAnalysis } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface LiveTradingStatusProps {
   session: TradingSession;
@@ -28,32 +29,55 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
-    if (autoRefresh) {
-      loadStatus();
-      const interval = setInterval(loadStatus, 15000); // Оновлення кожні 15 секунд
-      return () => clearInterval(interval);
-    }
-  }, [session.id, autoRefresh]);
+    // Підписуємося на оновлення сесії
+    websocketService.subscribeToSessions();
+
+    // Слухаємо оновлення сесій
+    websocketService.on("sessions", (data: TradingSession[]) => {
+      const updatedSession = data.find((s) => s.id === session.id);
+      if (updatedSession) {
+        loadStatus();
+      }
+    });
+
+    // Підписуємося на оновлення аналізу ринку
+    websocketService.subscribeToMarketAnalysis(session.symbol);
+
+    // Слухаємо оновлення аналізу
+    websocketService.on(
+      `market_analysis_${session.symbol}`,
+      (data: MarketAnalysis[]) => {
+        loadStatus();
+      }
+    );
+
+    loadStatus();
+
+    return () => {
+      websocketService.unsubscribeFromSessions();
+      websocketService.unsubscribeFromMarketAnalysis(session.symbol);
+    };
+  }, [session.id]);
 
   const loadStatus = async () => {
     setLoading(true);
     setError(null);
     try {
       // Отримуємо поточний статус сесії
-      const sessionResponse = await tradingApi.getSessionStatus(session.symbol);
-      const currentSession = sessionResponse.data;
+      const currentSession = await websocketService.getSessionStatus(
+        session.symbol
+      );
 
       // Отримуємо аналіз ринку
-      const analysisResponse = await tradingApi.getMarketAnalysis(
+      const analysisData = await websocketService.getMarketAnalysis(
         session.symbol
       );
       const analysis =
-        analysisResponse.data.find((a) => a.timeframe === "1d") ||
-        analysisResponse.data[0];
+        analysisData.find((a) => a.timeframe === "1d") || analysisData[0];
 
       // Отримуємо кількість активних позицій
-      const positionsResponse = await tradingApi.getActivePositionsCount();
-      const activePositionsCount = positionsResponse.data.count;
+      const activePositionsCount =
+        await websocketService.getActivePositionsCount();
 
       if (currentSession && analysis) {
         const currentPrice = analysis.currentPrice;
@@ -188,25 +212,7 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="autoRefresh"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Автооновлення</span>
-            </label>
-            <button
-              onClick={loadStatus}
-              disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-            >
-              {loading ? "Оновлення..." : "Оновити"}
-            </button>
-          </div>
+          <div className="flex items-center space-x-3"></div>
         </div>
 
         {error && (

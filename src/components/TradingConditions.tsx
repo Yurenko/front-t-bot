@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { tradingApi, MarketAnalysis } from "../services/api";
+import { MarketAnalysis } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface TradingConditionsProps {
   symbol: string;
@@ -24,6 +25,68 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
   // Використовуємо useRef для зберігання інтервалу
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const updateConditions = (analysis: MarketAnalysis) => {
+    const currentConditions: ConditionStatus[] = [
+      {
+        name: "Консолідація ринку",
+        status: analysis.consolidation,
+        description: "Ринок в стані консолідації (низька волатильність)",
+        weight: 35,
+        details: `Діапазон цін: ${(
+          ((analysis.resistanceLevel - analysis.supportLevel) /
+            analysis.currentPrice) *
+          100
+        ).toFixed(2)}%`,
+        value: analysis.consolidation ? "✅ Консолідація" : "❌ Тренд",
+      },
+      {
+        name: "Позиція в коридорі",
+        status: isInLowerThird(analysis),
+        description: "Ціна в нижній третині коридору",
+        weight: 30,
+        details: `Позиція: ${(
+          ((analysis.currentPrice - analysis.supportLevel) /
+            (analysis.resistanceLevel - analysis.supportLevel)) *
+          100
+        ).toFixed(1)}% від діапазону`,
+        value: isInLowerThird(analysis)
+          ? "✅ В нижній третині"
+          : "❌ Не в нижній третині",
+      },
+      {
+        name: "Волатильність",
+        status: analysis.volatility !== "high",
+        description: "Волатильність не висока",
+        weight: 25,
+        details: `ATR: ${analysis.indicators.atr.toFixed(4)} (${
+          analysis.volatility
+        })`,
+        value:
+          analysis.volatility === "low"
+            ? "✅ Низька"
+            : analysis.volatility === "medium"
+            ? "⚠️ Середня"
+            : "❌ Висока",
+      },
+
+      {
+        name: "Технічні індикатори",
+        status: checkTechnicalIndicators(analysis),
+        description: "RSI, SMA та інші індикатори в нормі",
+        weight: 10,
+        details: `SMA20: ${analysis.indicators.sma20.toFixed(
+          2
+        )}, RSI: ${analysis.indicators.rsi.toFixed(2)}`,
+        value: checkTechnicalIndicators(analysis)
+          ? "✅ В нормі"
+          : "❌ Не в нормі",
+      },
+    ];
+
+    setConditions(currentConditions);
+    setLastUpdate(new Date().toISOString());
+  };
+
   const loadConditions = async () => {
     if (loading) {
       console.log("⏳ Умови торгівлі вже завантажуються, пропускаємо...");
@@ -33,113 +96,41 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getMarketAnalysis(symbol);
-      const analysis =
-        response.data.find((a) => a.timeframe === "1d") || response.data[0];
+      const data = await websocketService.getMarketAnalysis(symbol);
+      const analysis = data.find((a) => a.timeframe === "1d") || data[0];
 
       if (analysis) {
-        const currentConditions: ConditionStatus[] = [
-          {
-            name: "Консолідація ринку",
-            status: analysis.consolidation,
-            description: "Ринок в стані консолідації (низька волатильність)",
-            weight: 35,
-            details: `Діапазон цін: ${(
-              ((analysis.resistanceLevel - analysis.supportLevel) /
-                analysis.currentPrice) *
-              100
-            ).toFixed(2)}%`,
-            value: analysis.consolidation ? "✅ Консолідація" : "❌ Тренд",
-          },
-          {
-            name: "Позиція в коридорі",
-            status: isInLowerThird(analysis),
-            description: "Ціна в нижній третині коридору",
-            weight: 30,
-            details: `Позиція: ${(
-              ((analysis.currentPrice - analysis.supportLevel) /
-                (analysis.resistanceLevel - analysis.supportLevel)) *
-              100
-            ).toFixed(1)}% від діапазону`,
-            value: isInLowerThird(analysis)
-              ? "✅ В нижній третині"
-              : "❌ Не в нижній третині",
-          },
-          {
-            name: "Волатильність",
-            status: analysis.volatility !== "high",
-            description: "Волатильність не висока",
-            weight: 25,
-            details: `ATR: ${analysis.indicators.atr.toFixed(4)} (${
-              analysis.volatility
-            })`,
-            value:
-              analysis.volatility === "low"
-                ? "✅ Низька"
-                : analysis.volatility === "medium"
-                ? "⚠️ Середня"
-                : "❌ Висока",
-          },
-
-          {
-            name: "Технічні індикатори",
-            status: checkTechnicalIndicators(analysis),
-            description: "RSI, SMA та інші індикатори в нормі",
-            weight: 10,
-            details: `SMA20: ${analysis.indicators.sma20.toFixed(
-              2
-            )}, RSI: ${analysis.indicators.rsi.toFixed(2)}`,
-            value: checkTechnicalIndicators(analysis)
-              ? "✅ В нормі"
-              : "❌ Не в нормі",
-          },
-        ];
-
-        setConditions(currentConditions);
-        setLastUpdate(new Date().toISOString());
+        updateConditions(analysis);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження умов");
+      setError(err.message || "Помилка завантаження умов");
     } finally {
       setLoading(false);
     }
   };
 
-  // useEffect для керування інтервалом
+  // useEffect для керування WebSocket підписками
   useEffect(() => {
-    // Очищаємо попередній інтервал
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    // Підписуємося на оновлення аналізу ринку для цього символу
+    websocketService.subscribeToMarketAnalysis(symbol);
 
-    // Запускаємо перший аналіз
-    if (autoRefresh) {
-      loadConditions();
-
-      // Встановлюємо інтервал
-      intervalRef.current = setInterval(() => {
-        if (autoRefresh) {
-          loadConditions();
+    // Слухаємо оновлення аналізу
+    websocketService.on(
+      `market_analysis_${symbol}`,
+      (data: MarketAnalysis[]) => {
+        const analysis = data.find((a) => a.timeframe === "1d") || data[0];
+        if (analysis) {
+          updateConditions(analysis);
         }
-      }, 60000); // Оновлення кожні 60 секунд
-    }
-
-    // Cleanup функція
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
       }
-    };
-  }, [autoRefresh, symbol]); // Видаляємо loadConditions з залежностей
+    );
 
-  // Окремий useEffect для завантаження при зміні символу
-  useEffect(() => {
-    if (symbol && !loading) {
-      loadConditions();
-    }
-  }, [symbol]); // Тільки при зміні символу
+    loadConditions();
+
+    return () => {
+      websocketService.unsubscribeFromMarketAnalysis(symbol);
+    };
+  }, [symbol]);
 
   const isInLowerThird = (analysis: MarketAnalysis): boolean => {
     const corridorRange = analysis.resistanceLevel - analysis.supportLevel;
@@ -233,25 +224,7 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="autoRefresh"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Автооновлення</span>
-            </label>
-            <button
-              onClick={loadConditions}
-              disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-            >
-              {loading ? "Оновлення..." : "Оновити"}
-            </button>
-          </div>
+          <div className="flex items-center space-x-3"></div>
         </div>
 
         {error && (

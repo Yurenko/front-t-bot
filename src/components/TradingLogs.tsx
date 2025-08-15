@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, Trade } from "../services/api";
+import { Trade } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface TradingLogsProps {
   sessionId: string;
@@ -22,22 +23,31 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
-    if (autoRefresh) {
-      loadTrades();
-      const interval = setInterval(loadTrades, 10000); // Оновлення кожні 10 секунд
-      return () => clearInterval(interval);
-    }
-  }, [sessionId, autoRefresh]);
+    // Підписуємося на оновлення угод для цієї сесії
+    websocketService.subscribeToTrades(sessionId);
+
+    // Слухаємо оновлення угод
+    websocketService.on(`trades_${sessionId}`, (data: Trade[]) => {
+      setTrades(data);
+      generateLogs(data);
+    });
+
+    loadTrades();
+
+    return () => {
+      websocketService.unsubscribeFromTrades(sessionId);
+    };
+  }, [sessionId]);
 
   const loadTrades = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getSessionTrades(sessionId);
-      setTrades(response.data);
-      generateLogs(response.data);
+      const data = await websocketService.getSessionTrades(sessionId);
+      setTrades(data);
+      generateLogs(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження логів");
+      setError(err.message || "Помилка завантаження логів");
     } finally {
       setLoading(false);
     }
@@ -171,25 +181,7 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
               Останні угоди та системні повідомлення
             </p>
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="autoRefresh"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Автооновлення</span>
-            </label>
-            <button
-              onClick={loadTrades}
-              disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-            >
-              {loading ? "Оновлення..." : "Оновити"}
-            </button>
-          </div>
+          <div className="flex items-center space-x-3"></div>
         </div>
       </div>
 

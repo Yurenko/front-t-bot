@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, MarketAnalysis, TradingSession } from "../services/api";
+import { MarketAnalysis, TradingSession } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface MarketAnalysisProps {
   symbol: string;
@@ -14,19 +15,34 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
+    // Підписуємося на оновлення аналізу ринку для цього символу
+    websocketService.subscribeToMarketAnalysis(selectedSymbol);
+
+    // Слухаємо оновлення аналізу
+    websocketService.on(
+      `market_analysis_${selectedSymbol}`,
+      (data: MarketAnalysis[]) => {
+        setAnalysis(data);
+      }
+    );
+
+    // Підписуємося на оновлення сесій
+    websocketService.subscribeToSessions();
+
+    // Слухаємо оновлення сесій
+    websocketService.on("sessions", (data: TradingSession[]) => {
+      const active = data.filter((session) => session.status === "active");
+      setActiveSessions(active);
+    });
+
     loadAnalysis();
     loadActiveSessions();
-  }, [selectedSymbol]);
 
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        loadAnalysis();
-        loadActiveSessions();
-      }, 30000); // Оновлення кожні 30 секунд
-      return () => clearInterval(interval);
-    }
-  }, [selectedSymbol, autoRefresh]);
+    return () => {
+      websocketService.unsubscribeFromMarketAnalysis(selectedSymbol);
+      websocketService.unsubscribeFromSessions();
+    };
+  }, [selectedSymbol]);
 
   useEffect(() => {
     setSelectedSymbol(symbol);
@@ -36,10 +52,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getMarketAnalysis(selectedSymbol);
-      setAnalysis(response.data);
+      const data = await websocketService.getMarketAnalysis(selectedSymbol);
+      setAnalysis(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження аналізу");
+      setError(err.message || "Помилка завантаження аналізу");
     } finally {
       setLoading(false);
     }
@@ -47,8 +63,8 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
 
   const loadActiveSessions = async () => {
     try {
-      const response = await tradingApi.getAllSessions();
-      const active = response.data.filter(
+      const data = await websocketService.getAllSessions();
+      const active = data.filter(
         (session: TradingSession) => session.status === "active"
       );
       setActiveSessions(active);
@@ -141,13 +157,6 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
               </label>
             </div>
           </div>
-          <button
-            onClick={loadAnalysis}
-            disabled={loading}
-            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
         </div>
       </div>
 

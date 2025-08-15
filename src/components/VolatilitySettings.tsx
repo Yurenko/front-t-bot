@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { tradingApi } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface VolatilitySettingsProps {
   sessionId: string;
@@ -26,7 +26,7 @@ const VolatilitySettings: React.FC<VolatilitySettingsProps> = ({
     setIsUpdating(true);
     try {
       const newValue = !isChecked;
-      await tradingApi.updateVolatilityCheck(sessionId, newValue);
+      await websocketService.updateVolatilityCheck(sessionId, newValue);
       setIsChecked(newValue);
       onUpdate();
     } catch (error) {

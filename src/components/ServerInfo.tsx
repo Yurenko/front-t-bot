@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { tradingApi } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface ServerInfo {
   serverTime: string;
@@ -27,12 +28,10 @@ const ServerInfo: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getServerInfo();
-      setServerInfo(response.data);
+      const data = await websocketService.getServerInfo();
+      setServerInfo(data);
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Помилка завантаження інформації сервера"
-      );
+      setError(err.message || "Помилка завантаження інформації сервера");
     } finally {
       setLoading(false);
     }
@@ -90,13 +89,6 @@ const ServerInfo: React.FC = () => {
               Статус сервера та конфігурація
             </p>
           </div>
-          <button
-            onClick={loadServerInfo}
-            disabled={loading}
-            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
         </div>
       </div>
 

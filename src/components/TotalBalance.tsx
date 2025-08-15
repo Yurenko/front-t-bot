@@ -1,23 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, TotalBalance } from "../services/api";
+import { websocketService } from "../services/websocket";
 
-const TotalBalanceComponent: React.FC = () => {
-  const [balance, setBalance] = useState<TotalBalance | null>(null);
-  const [loading, setLoading] = useState(false);
+interface BalanceData {
+  totalBalance: number;
+  availableBalance: number;
+  unrealizedProfit: number;
+  marginBalance: number;
+  usedBalance: number;
+}
+
+const TotalBalance: React.FC = () => {
+  const [balance, setBalance] = useState<BalanceData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Підписуємося на оновлення балансу
+    websocketService.subscribeToBalance();
+
+    // Слухаємо оновлення балансу
+    websocketService.on("balance", (data: BalanceData) => {
+      setBalance(data);
+    });
+
     loadBalance();
+
+    return () => {
+      websocketService.unsubscribeFromBalance();
+    };
   }, []);
 
   const loadBalance = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getTotalBalance();
-      setBalance(response.data);
+      const data = await websocketService.getTotalBalance();
+      setBalance(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження балансу");
+      setError(err.message || "Помилка завантаження балансу");
     } finally {
       setLoading(false);
     }
@@ -73,12 +93,6 @@ const TotalBalanceComponent: React.FC = () => {
         <h2 className="text-xl md:text-2xl font-bold text-gray-800">
           Загальний баланс Binance
         </h2>
-        <button
-          onClick={loadBalance}
-          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-        >
-          Оновити
-        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -90,7 +104,7 @@ const TotalBalanceComponent: React.FC = () => {
                 Загальний баланс гаманця
               </h3>
               <p className="text-lg md:text-2xl font-bold text-blue-900">
-                {formatCurrency(balance.totalWalletBalance)}
+                {formatCurrency(balance.totalBalance)}
               </p>
             </div>
             <div className="text-blue-500">
@@ -114,10 +128,10 @@ const TotalBalanceComponent: React.FC = () => {
               </h3>
               <p
                 className={`text-lg md:text-2xl font-bold ${getBalanceColor(
-                  balance.totalUnrealizedProfit
+                  balance.unrealizedProfit
                 )}`}
               >
-                {formatCurrency(balance.totalUnrealizedProfit)}
+                {formatCurrency(balance.unrealizedProfit)}
               </p>
             </div>
             <div className="text-green-500">
@@ -144,7 +158,7 @@ const TotalBalanceComponent: React.FC = () => {
                 Маржинальний баланс
               </h3>
               <p className="text-lg md:text-2xl font-bold text-purple-900">
-                {formatCurrency(balance.totalMarginBalance)}
+                {formatCurrency(balance.marginBalance)}
               </p>
             </div>
             <div className="text-purple-500">
@@ -167,7 +181,7 @@ const TotalBalanceComponent: React.FC = () => {
                 Доступний баланс
               </h3>
               <p className="text-lg md:text-2xl font-bold text-yellow-900">
-                {formatCurrency(balance.totalAvailableBalance)}
+                {formatCurrency(balance.availableBalance)}
               </p>
             </div>
             <div className="text-yellow-500">
@@ -194,7 +208,7 @@ const TotalBalanceComponent: React.FC = () => {
                 Використаний баланс
               </h3>
               <p className="text-lg md:text-2xl font-bold text-red-900">
-                {formatCurrency(balance.totalUsedBalance)}
+                {formatCurrency(balance.usedBalance)}
               </p>
             </div>
             <div className="text-red-500">
@@ -222,10 +236,10 @@ const TotalBalanceComponent: React.FC = () => {
               </h3>
               <p
                 className={`text-lg md:text-2xl font-bold ${getBalanceColor(
-                  balance.totalUnrealizedProfit
+                  balance.unrealizedProfit
                 )}`}
               >
-                {formatCurrency(balance.totalUnrealizedProfit)}
+                {formatCurrency(balance.unrealizedProfit)}
               </p>
             </div>
             <div className="text-indigo-500">
@@ -270,4 +284,4 @@ const TotalBalanceComponent: React.FC = () => {
   );
 };
 
-export default TotalBalanceComponent;
+export default TotalBalance;

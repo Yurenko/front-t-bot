@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { tradingApi, ActiveSessionWithROI } from "../services/api";
+import { ActiveSessionWithROI } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 const ActiveSessionsROI: React.FC = () => {
   const [sessions, setSessions] = useState<ActiveSessionWithROI[]>([]);
@@ -19,11 +20,11 @@ const ActiveSessionsROI: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getActiveSessionsWithROI();
-      setSessions(response.data);
+      const data = await websocketService.getActiveSessionsWithROI();
+      setSessions(data);
       setLastUpdate(new Date().toISOString());
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження ROI");
+      setError(err.message || "Помилка завантаження ROI");
     } finally {
       setLoading(false);
     }
@@ -32,39 +33,32 @@ const ActiveSessionsROI: React.FC = () => {
   const handleCloseSession = async (sessionId: string, symbol: string) => {
     if (window.confirm(`Ви впевнені, що хочете закрити сесію для ${symbol}?`)) {
       try {
-        await tradingApi.closeSession(sessionId);
+        await websocketService.closeSession(sessionId);
         // Оновлюємо список після закриття
         loadSessions();
       } catch (err: any) {
-        setError(err.response?.data?.message || "Помилка закриття сесії");
+        setError(err.message || "Помилка закриття сесії");
       }
     }
   };
 
   // useEffect для керування інтервалом
   useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    // Підписуємося на оновлення сесій
+    websocketService.subscribeToSessions();
 
-    if (autoRefresh) {
-      loadSessions();
+    // Слухаємо оновлення сесій
+    websocketService.on("sessions", (data: ActiveSessionWithROI[]) => {
+      setSessions(data);
+      setLastUpdate(new Date().toISOString());
+    });
 
-      intervalRef.current = setInterval(() => {
-        if (autoRefresh) {
-          loadSessions();
-        }
-      }, 30000); // Оновлення кожні 30 секунд
-    }
+    loadSessions();
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      websocketService.unsubscribeFromSessions();
     };
-  }, [autoRefresh]);
+  }, []);
 
   const getROIColor = (roi: number) => {
     if (roi >= 0.05) return "text-green-600"; // 5% і більше
@@ -148,25 +142,7 @@ const ActiveSessionsROI: React.FC = () => {
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="autoRefresh"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Автооновлення</span>
-            </label>
-            <button
-              onClick={loadSessions}
-              disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-            >
-              {loading ? "Оновлення..." : "Оновити"}
-            </button>
-          </div>
+          <div className="flex items-center space-x-3"></div>
         </div>
 
         {error && (
@@ -361,12 +337,6 @@ const ActiveSessionsROI: React.FC = () => {
             <p className="text-gray-500 mb-4">
               Немає активних сесій для відображення
             </p>
-            <button
-              onClick={loadSessions}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Оновити
-            </button>
           </div>
         )}
       </div>

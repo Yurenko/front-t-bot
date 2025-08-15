@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { tradingApi, TradingSession, Trade } from "../services/api";
+import { TradingSession, Trade } from "../services/api";
+import { websocketService } from "../services/websocket";
 import LiveTradingStatus from "./LiveTradingStatus";
 import VolatilitySettings from "./VolatilitySettings";
 
@@ -17,14 +18,28 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
+    // Підписуємося на оновлення угод для цієї сесії
+    websocketService.subscribeToTrades(session.id.toString());
+
+    // Слухаємо оновлення угод
+    websocketService.on(`trades_${session.id}`, (data: Trade[]) => {
+      setTrades(data);
+    });
+
     loadTrades();
+
+    return () => {
+      websocketService.unsubscribeFromTrades(session.id.toString());
+    };
   }, [session.id]);
 
   const loadTrades = async () => {
     try {
       console.log("Loading trades for session ID:", session.id);
-      const response = await tradingApi.getSessionTrades(session.id.toString());
-      setTrades(response.data);
+      const data = await websocketService.getSessionTrades(
+        session.id.toString()
+      );
+      setTrades(data);
     } catch (error) {
       console.error("Помилка завантаження угод:", error);
     }
@@ -33,7 +48,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
-      await tradingApi.analyzeAndTrade(session.symbol);
+      await websocketService.analyzeAndTrade(session.symbol);
       onRefresh();
       await loadTrades();
     } catch (error) {
@@ -62,7 +77,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
     }
 
     try {
-      await tradingApi.closeSession(session.id);
+      await websocketService.closeSession(session.id);
       onRefresh();
     } catch (error) {
       console.error("Помилка закриття сесії:", error);
@@ -110,13 +125,6 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
           Сесія {session.symbol}
         </h2>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 text-sm"
-          >
-            {loading ? "Оновлення..." : "Оновити"}
-          </button>
           {session.status === "active" && (
             <>
               <button

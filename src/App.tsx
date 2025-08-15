@@ -7,11 +7,13 @@ import TradingConditions from "./components/TradingConditions";
 import AllTradingConditions from "./components/AllTradingConditions";
 import TradingLogs from "./components/TradingLogs";
 import TotalBalance from "./components/TotalBalance";
-import AutoTradingControl from "./components/AutoTradingControl";
+import ConnectionStatus from "./components/ConnectionStatus";
+
 import ActiveSessionsROI from "./components/ActiveSessionsROI";
 import SessionsGrid from "./components/SessionsGrid";
-import TakeProfitInfo from "./components/TakeProfitInfo";
-import { tradingApi, TradingSession } from "./services/api";
+
+import { TradingSession } from "./services/api";
+import { websocketService } from "./services/websocket";
 
 function App() {
   const [sessions, setSessions] = useState<TradingSession[]>([]);
@@ -19,39 +21,55 @@ function App() {
     null
   );
   const [activeTab, setActiveTab] = useState<
-    | "sessions"
-    | "analysis"
-    | "conditions"
-    | "logs"
-    | "new"
-    | "balance"
-    | "auto-trading"
-    | "roi"
-    | "take-profit"
+    "sessions" | "analysis" | "conditions" | "logs" | "new" | "balance" | "roi"
   >("sessions");
   const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    // Підключаємося до WebSocket
+    websocketService.connect().catch(console.error);
+
+    // Підписуємося на оновлення сесій
+    websocketService.subscribeToSessions();
+
+    // Слухаємо оновлення сесій
+    websocketService.on("sessions", (data: TradingSession[]) => {
+      setSessions(data);
+
+      // Оновлюємо обрану сесію, якщо вона є в оновлених даних
+      if (selectedSession) {
+        const updatedSession = data.find((s) => s.id === selectedSession.id);
+        if (updatedSession) {
+          setSelectedSession(updatedSession);
+        }
+      }
+    });
+
     loadSessions();
+
+    return () => {
+      websocketService.unsubscribeFromSessions();
+      websocketService.disconnect();
+    };
   }, []);
 
   const loadSessions = async () => {
     setLoading(true);
     try {
-      const response = await tradingApi.getAllSessions();
-      setSessions(response.data);
+      const data = await websocketService.getAllSessions();
+      setSessions(data);
 
       // Вибираємо першу активну сесію, якщо немає обраної
-      if (response.data.length > 0 && !selectedSession) {
-        const activeSession = response.data.find(
+      if (data.length > 0 && !selectedSession) {
+        const activeSession = data.find(
           (session) => session.status === "active"
         );
         if (activeSession) {
           setSelectedSession(activeSession);
-        } else if (response.data.length > 0) {
+        } else if (data.length > 0) {
           // Якщо немає активних, вибираємо першу для показу
-          setSelectedSession(response.data[0]);
+          setSelectedSession(data[0]);
         }
       }
     } catch (error) {
@@ -73,13 +91,13 @@ function App() {
     // Якщо є обрана сесія, оновлюємо її дані
     if (selectedSession) {
       try {
-        const response = await tradingApi.getSessionStatus(
+        const data = await websocketService.getSessionStatus(
           selectedSession.symbol
         );
-        if (response.data) {
+        if (data) {
           setSelectedSession({
-            ...response.data,
-            id: response.data.id || selectedSession.id,
+            ...data,
+            id: data.id || selectedSession.id,
           });
         }
       } catch (error) {
@@ -100,9 +118,7 @@ function App() {
     { id: "logs", label: "Логи", icon: "📝" },
     { id: "new", label: "Нова сесія", icon: "➕" },
     { id: "balance", label: "Баланс", icon: "💰" },
-    { id: "auto-trading", label: "Автоаналіз", icon: "🤖" },
     { id: "roi", label: "ROI", icon: "📊" },
-    { id: "take-profit", label: "Take-Profit", icon: "🎯" },
   ];
 
   return (
@@ -181,6 +197,9 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+        {/* Статус підключення */}
+        <ConnectionStatus />
+
         {activeTab === "sessions" && (
           <div className="space-y-4 md:space-y-6">
             <SessionsGrid
@@ -294,21 +313,9 @@ function App() {
           </div>
         )}
 
-        {activeTab === "auto-trading" && (
-          <div className="space-y-4 md:space-y-6">
-            <AutoTradingControl />
-          </div>
-        )}
-
         {activeTab === "roi" && (
           <div className="space-y-4 md:space-y-6">
             <ActiveSessionsROI />
-          </div>
-        )}
-
-        {activeTab === "take-profit" && (
-          <div className="space-y-4 md:space-y-6">
-            <TakeProfitInfo />
           </div>
         )}
       </main>

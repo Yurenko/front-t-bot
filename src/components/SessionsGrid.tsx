@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  tradingApi,
-  ActiveSessionWithROI,
-  TradingSession,
-} from "../services/api";
+import { ActiveSessionWithROI, TradingSession } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface SessionsGridProps {
   onSessionSelect: (session: TradingSession) => void;
@@ -26,17 +23,36 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const response = await tradingApi.getActiveSessionsWithROI();
-      setSessionsWithROI(response.data);
+      const data = await websocketService.getActiveSessionsWithROI();
+      setSessionsWithROI(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Помилка завантаження ROI");
+      setError(err.message || "Помилка завантаження ROI");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Підписуємося на оновлення сесій
+    websocketService.subscribeToSessions();
+
+    // Слухаємо оновлення сесій
+    websocketService.on("sessions", (data: ActiveSessionWithROI[]) => {
+      setSessionsWithROI(data);
+    });
+
     loadSessionsWithROI();
+
+    // Автоматичне оновлення даних кожні 30 секунд
+    const interval = setInterval(() => {
+      console.log("🔄 Автоматичне оновлення даних сесій...");
+      loadSessionsWithROI();
+    }, 30000);
+
+    return () => {
+      websocketService.unsubscribeFromSessions();
+      clearInterval(interval);
+    };
   }, []);
 
   const getROIColor = (roi: number) => {
@@ -73,11 +89,11 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
   const handleSessionClick = async (session: ActiveSessionWithROI) => {
     try {
       // Отримуємо актуальні дані сесії з сервера
-      const response = await tradingApi.getSessionStatus(session.symbol);
-      if (response.data) {
+      const data = await websocketService.getSessionStatus(session.symbol);
+      if (data) {
         onSessionSelect({
-          ...response.data,
-          id: response.data.id || session.sessionId,
+          ...data,
+          id: data.id || session.sessionId,
         });
       } else {
         // Якщо не вдалося отримати дані, використовуємо дані з сітки
@@ -161,16 +177,6 @@ const SessionsGrid: React.FC<SessionsGridProps> = ({
         <h2 className="text-lg md:text-xl font-semibold text-gray-900">
           Торгові сесії
         </h2>
-        <button
-          onClick={() => {
-            loadSessionsWithROI();
-            onRefresh();
-          }}
-          disabled={loading}
-          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-        >
-          {loading ? "Оновлення..." : "Оновити"}
-        </button>
       </div>
 
       {/* Сесії з позиціями */}

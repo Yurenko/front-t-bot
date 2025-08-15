@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { tradingApi, MarketAnalysis, TradingSession } from "../services/api";
+import { MarketAnalysis, TradingSession } from "../services/api";
+import { websocketService } from "../services/websocket";
 
 interface AllTradingConditionsProps {
   sessions: TradingSession[];
@@ -49,115 +50,160 @@ const AllTradingConditions: React.FC<AllTradingConditionsProps> = ({
       return;
     }
 
+    if (activeSessions.length === 0) {
+      console.log("📝 Немає активних сесій для аналізу");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setProgress({ current: 0, total: activeSessions.length });
 
     console.log(
-      `Запуск аналізу для ${activeSessions.length} активних сесій...`
+      `🚀 Запуск аналізу для ${activeSessions.length} активних сесій...`
     );
 
     try {
       const symbols = activeSessions.map((session) => session.symbol);
       console.log(`📊 Запит пакетного аналізу для: ${symbols.join(", ")}`);
 
-      const startTime = Date.now();
-      const response = await tradingApi.getMarketAnalysisBatch(symbols);
-      const endTime = Date.now();
+      // Обмежуємо кількість символів для одного запиту
+      const maxSymbolsPerRequest = 10;
+      let allResults: MarketAnalysis[][] = [];
 
-      console.log(`✅ Пакетний аналіз завершено за ${endTime - startTime}мс`);
-      console.log(
-        `📈 Успішно: ${response.data.successful}, Помилок: ${response.data.failed}`
-      );
+      for (let i = 0; i < symbols.length; i += maxSymbolsPerRequest) {
+        const batchSymbols = symbols.slice(i, i + maxSymbolsPerRequest);
+        console.log(
+          `📦 Обробка batch ${
+            Math.floor(i / maxSymbolsPerRequest) + 1
+          }: ${batchSymbols.join(", ")}`
+        );
 
-      const results = response.data.results.map((result, index) => {
-        const session = activeSessions[index];
+        const startTime = Date.now();
+        const response = await websocketService.getMarketAnalysisBatch(
+          batchSymbols
+        );
+        const endTime = Date.now();
 
-        if (result.success && result.analysis) {
-          const conditions = calculateConditions(result.analysis, session);
-          const metConditions = conditions.filter((c) => c.isMet).length;
-          const percentage = (metConditions / conditions.length) * 100;
+        console.log(
+          `✅ Batch ${Math.floor(i / maxSymbolsPerRequest) + 1} завершено за ${
+            endTime - startTime
+          }мс`
+        );
 
-          let overallStatus = "not-ready";
-          // Нова логіка: потрібно виконати всі основні умови для входу
-          const mainConditions = conditions.slice(0, 4); // Перші 4 умови - основні (без балансу та позицій)
-          const mainConditionsMet = mainConditions.filter(
-            (c) => c.isMet
-          ).length;
-
-          if (mainConditionsMet === mainConditions.length) {
-            overallStatus = "ready";
-          } else if (percentage >= 70) {
-            overallStatus = "partial";
-          }
-
-          return {
-            session,
-            conditions,
-            analysis: result.analysis,
-            overallStatus,
-            percentage,
-          };
+        // Перевіряємо чи response є масивом
+        if (response && Array.isArray(response)) {
+          allResults = allResults.concat(response);
         } else {
           console.error(
-            `❌ Помилка аналізу для ${session.symbol}:`,
-            result.error
+            "❌ Неочікуваний формат відповіді для batch:",
+            response
           );
-          return {
-            session,
-            conditions: [],
-            analysis: [],
-            overallStatus: "error",
-            percentage: 0,
-          };
+          // Додаємо порожні масиви для цього batch
+          allResults = allResults.concat(
+            new Array(batchSymbols.length).fill([])
+          );
         }
-      });
+
+        // Оновлюємо прогрес
+        setProgress({
+          current: Math.min(i + maxSymbolsPerRequest, symbols.length),
+          total: symbols.length,
+        });
+      }
+
+      console.log(`📈 Всього отримано аналізів: ${allResults.length}`);
+
+      const results = allResults
+        .map((analysisData: MarketAnalysis[], index: number) => {
+          const session = activeSessions[index];
+
+          if (!session) {
+            console.error(`❌ Сесія не знайдена для індексу ${index}`);
+            return null;
+          }
+
+          if (
+            analysisData &&
+            Array.isArray(analysisData) &&
+            analysisData.length > 0
+          ) {
+            const conditions = calculateConditions(analysisData, session);
+            const metConditions = conditions.filter((c) => c.isMet).length;
+            const percentage = (metConditions / conditions.length) * 100;
+
+            let overallStatus = "not-ready";
+            // Нова логіка: потрібно виконати всі основні умови для входу
+            const mainConditions = conditions.slice(0, 4); // Перші 4 умови - основні (без балансу та позицій)
+            const mainConditionsMet = mainConditions.filter(
+              (c) => c.isMet
+            ).length;
+
+            if (mainConditionsMet === mainConditions.length) {
+              overallStatus = "ready";
+            } else if (percentage >= 70) {
+              overallStatus = "partial";
+            }
+
+            return {
+              session,
+              conditions,
+              analysis: analysisData,
+              overallStatus,
+              percentage,
+            };
+          } else {
+            console.error(
+              `❌ Помилка аналізу для ${session.symbol}: немає даних або неправильний формат`
+            );
+            return {
+              session,
+              conditions: [],
+              analysis: [],
+              overallStatus: "error",
+              percentage: 0,
+            };
+          }
+        })
+        .filter((item): item is SessionConditions => item !== null); // Правильна фільтрація для TypeScript
 
       setSessionsConditions(results);
     } catch (err: any) {
       console.error("❌ Загальна помилка аналізу:", err);
-      setError(err.response?.data?.message || "Помилка завантаження аналізу");
+      setError(err.message || "Помилка завантаження аналізу");
     } finally {
       setLoading(false);
       setProgress(null);
     }
   }, [activeSessions, loading]);
 
-  // Окремий useEffect для керування інтервалом
+  // useEffect для керування WebSocket підписками
   useEffect(() => {
-    // Очищаємо попередній інтервал
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    if (activeSessions.length > 0) {
+      // Підписуємося на оновлення аналізу ринку для всіх символів
+      activeSessions.forEach((session) => {
+        websocketService.subscribeToMarketAnalysis(session.symbol);
+      });
 
-    // Запускаємо перший аналіз
-    if (autoRefresh && activeSessions.length > 0) {
+      // Слухаємо оновлення аналізу для всіх символів
+      activeSessions.forEach((session) => {
+        websocketService.on(
+          `market_analysis_${session.symbol}`,
+          (data: MarketAnalysis[]) => {
+            loadAllAnalysis();
+          }
+        );
+      });
+
       loadAllAnalysis();
 
-      // Встановлюємо інтервал
-      intervalRef.current = setInterval(() => {
-        if (autoRefresh && activeSessions.length > 0) {
-          loadAllAnalysis();
-        }
-      }, 60000); // Оновлення кожні 60 секунд
+      return () => {
+        activeSessions.forEach((session) => {
+          websocketService.unsubscribeFromMarketAnalysis(session.symbol);
+        });
+      };
     }
-
-    // Cleanup функція
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [autoRefresh, activeSessions.length]); // Видаляємо loadAllAnalysis з залежностей
-
-  // Окремий useEffect для завантаження при зміні сесій
-  useEffect(() => {
-    if (activeSessions.length > 0 && !loading) {
-      loadAllAnalysis();
-    }
-  }, [activeSessions.length]); // Тільки при зміні кількості сесій
+  }, [activeSessions.length]);
 
   const calculateConditions = (
     analysisData: MarketAnalysis[],
@@ -333,25 +379,7 @@ const AllTradingConditions: React.FC<AllTradingConditionsProps> = ({
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="autoRefresh"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Автооновлення</span>
-            </label>
-            <button
-              onClick={loadAllAnalysis}
-              disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
-            >
-              {loading ? "Аналіз..." : "Оновити"}
-            </button>
-          </div>
+          <div className="flex items-center space-x-3"></div>
         </div>
 
         {error && (
