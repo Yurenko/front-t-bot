@@ -43,6 +43,7 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
     setLoading(true);
     setError(null);
     try {
+      // Додаємо timestamp для уникнення кешування
       const data = await websocketService.getSessionTrades(sessionId);
       setTrades(data);
       generateLogs(data);
@@ -181,7 +182,15 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
               Останні угоди та системні повідомлення
             </p>
           </div>
-          <div className="flex items-center space-x-3"></div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={loadTrades}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Оновлення..." : "Оновити"}
+            </button>
+          </div>
         </div>
       </div>
 
