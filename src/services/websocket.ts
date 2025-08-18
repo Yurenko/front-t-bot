@@ -54,9 +54,13 @@ class WebSocketService extends EventEmitter {
 
         this.socket = io(WEBSOCKET_URL, {
           path: "/ws",
-          transports: ["websocket"],
-          timeout: 5000,
+          transports: ["websocket", "polling"],
+          timeout: 10000,
           forceNew: true,
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
         });
 
         // Таймаут для підключення
@@ -71,7 +75,7 @@ class WebSocketService extends EventEmitter {
             this.socket = null;
           }
           resolve(); // Резолвимо проміс, щоб додаток продовжив роботу
-        }, 5000);
+        }, 10000);
 
         this.socket.on("connect", () => {
           console.log("✅ Socket.IO підключений");

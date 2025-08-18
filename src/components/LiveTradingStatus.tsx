@@ -357,7 +357,7 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
       )}
 
       {/* Аналіз ринку */}
-      {status?.marketAnalysis && (
+      {status?.marketAnalysis && status.marketAnalysis.indicators && (
         <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
           <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
             Аналіз ринку
@@ -374,19 +374,19 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-gray-600 mb-1">RSI</h4>
               <p className="text-sm font-semibold text-gray-900">
-                {status.marketAnalysis.indicators.rsi.toFixed(2)}
+                {(status.marketAnalysis.indicators.rsi || 0).toFixed(2)}
               </p>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-gray-600 mb-1">SMA 20</h4>
               <p className="text-sm font-semibold text-gray-900">
-                ${status.marketAnalysis.indicators.sma20.toFixed(4)}
+                ${(status.marketAnalysis.indicators.sma20 || 0).toFixed(4)}
               </p>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-gray-600 mb-1">ATR</h4>
               <p className="text-sm font-semibold text-gray-900">
-                ${status.marketAnalysis.indicators.atr.toFixed(4)}
+                ${(status.marketAnalysis.indicators.atr || 0).toFixed(4)}
               </p>
             </div>
           </div>
@@ -398,13 +398,13 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                 Підтримка
               </h4>
               <p className="text-sm font-semibold text-green-900">
-                ${status.marketAnalysis.supportLevel.toFixed(4)}
+                ${(status.marketAnalysis.supportLevel || 0).toFixed(4)}
               </p>
             </div>
             <div className="bg-red-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-red-600 mb-1">Опір</h4>
               <p className="text-sm font-semibold text-red-900">
-                ${status.marketAnalysis.resistanceLevel.toFixed(4)}
+                ${(status.marketAnalysis.resistanceLevel || 0).toFixed(4)}
               </p>
             </div>
           </div>

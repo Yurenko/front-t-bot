@@ -26,17 +26,26 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateConditions = (analysis: MarketAnalysis) => {
+    // Перевіряємо, чи всі необхідні поля існують
+    if (!analysis || !analysis.indicators) {
+      console.error("Неповні дані аналізу:", analysis);
+      setError("Неповні дані аналізу від сервера");
+      return;
+    }
+
     const currentConditions: ConditionStatus[] = [
       {
         name: "Консолідація ринку",
         status: analysis.consolidation,
         description: "Ринок в стані консолідації (низька волатильність)",
         weight: 35,
-        details: `Діапазон цін: ${(
-          ((analysis.resistanceLevel - analysis.supportLevel) /
-            analysis.currentPrice) *
-          100
-        ).toFixed(2)}%`,
+        details: `Діапазон цін: ${
+          (
+            ((analysis.resistanceLevel - analysis.supportLevel) /
+              analysis.currentPrice) *
+            100
+          ).toFixed(2) || "0.00"
+        }%`,
         value: analysis.consolidation ? "✅ Консолідація" : "❌ Тренд",
       },
       {
@@ -44,11 +53,13 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
         status: isInLowerThird(analysis),
         description: "Ціна в нижній третині коридору",
         weight: 30,
-        details: `Позиція: ${(
-          ((analysis.currentPrice - analysis.supportLevel) /
-            (analysis.resistanceLevel - analysis.supportLevel)) *
-          100
-        ).toFixed(1)}% від діапазону`,
+        details: `Позиція: ${
+          (
+            ((analysis.currentPrice - analysis.supportLevel) /
+              (analysis.resistanceLevel - analysis.supportLevel)) *
+            100
+          ).toFixed(1) || "0.0"
+        }% від діапазону`,
         value: isInLowerThird(analysis)
           ? "✅ В нижній третині"
           : "❌ Не в нижній третині",
@@ -58,7 +69,7 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
         status: analysis.volatility !== "high",
         description: "Волатильність не висока",
         weight: 25,
-        details: `ATR: ${analysis.indicators.atr.toFixed(4)} (${
+        details: `ATR: ${(analysis.indicators.atr || 0).toFixed(4)} (${
           analysis.volatility
         })`,
         value:
@@ -74,9 +85,9 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
         status: checkTechnicalIndicators(analysis),
         description: "RSI, SMA та інші індикатори в нормі",
         weight: 10,
-        details: `SMA20: ${analysis.indicators.sma20.toFixed(
+        details: `SMA20: ${(analysis.indicators.sma20 || 0).toFixed(
           2
-        )}, RSI: ${analysis.indicators.rsi.toFixed(2)}`,
+        )}, RSI: ${(analysis.indicators.rsi || 0).toFixed(2)}`,
         value: checkTechnicalIndicators(analysis)
           ? "✅ В нормі"
           : "❌ Не в нормі",
