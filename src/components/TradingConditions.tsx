@@ -97,12 +97,23 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
     setError(null);
     try {
       const data = await websocketService.getMarketAnalysis(symbol);
+
+      // Перевіряємо, чи data є масивом
+      if (!Array.isArray(data)) {
+        console.error("API повернув не масив:", data);
+        setError("Неправильний формат даних від сервера");
+        return;
+      }
+
       const analysis = data.find((a) => a.timeframe === "1d") || data[0];
 
       if (analysis) {
         updateConditions(analysis);
+      } else {
+        setError("Не знайдено аналіз для цього символу");
       }
     } catch (err: any) {
+      console.error("Помилка завантаження умов торгівлі:", err);
       setError(err.message || "Помилка завантаження умов");
     } finally {
       setLoading(false);
@@ -118,9 +129,13 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
     websocketService.on(
       `market_analysis_${symbol}`,
       (data: MarketAnalysis[]) => {
-        const analysis = data.find((a) => a.timeframe === "1d") || data[0];
-        if (analysis) {
-          updateConditions(analysis);
+        if (Array.isArray(data)) {
+          const analysis = data.find((a) => a.timeframe === "1d") || data[0];
+          if (analysis) {
+            updateConditions(analysis);
+          }
+        } else {
+          console.error("WebSocket повернув не масив:", data);
         }
       }
     );
