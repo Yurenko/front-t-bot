@@ -27,6 +27,8 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    console.log("🚀 Ініціалізація додатку...");
+
     // Підключаємося до WebSocket
     websocketService.connect().catch(console.error);
 
@@ -35,10 +37,11 @@ function App() {
 
     // Слухаємо оновлення сесій
     websocketService.on("sessions", (data: TradingSession[]) => {
+      console.log(`📡 Отримано оновлення сесій: ${data.length} сесій`);
       setSessions(data);
 
       // Оновлюємо обрану сесію, якщо вона є в оновлених даних
-      if (selectedSession) {
+      if (selectedSession && selectedSession.id) {
         const updatedSession = data.find((s) => s.id === selectedSession.id);
         if (updatedSession) {
           setSelectedSession(updatedSession);
@@ -46,7 +49,10 @@ function App() {
       }
     });
 
-    loadSessions();
+    // Завантажуємо сесії з затримкою для уникнення одночасних запитів
+    setTimeout(() => {
+      loadSessions();
+    }, 500);
 
     return () => {
       websocketService.unsubscribeFromSessions();
@@ -89,7 +95,7 @@ function App() {
     await loadSessions();
 
     // Якщо є обрана сесія, оновлюємо її дані
-    if (selectedSession) {
+    if (selectedSession && selectedSession.symbol) {
       try {
         const data = await websocketService.getSessionStatus(
           selectedSession.symbol
@@ -209,20 +215,22 @@ function App() {
             />
 
             {/* Деталі обраної сесії */}
-            {selectedSession && selectedSession.status === "active" && (
-              <div className="space-y-4 md:space-y-6">
-                <SessionStatus
-                  session={selectedSession}
-                  onRefresh={handleRefresh}
-                />
-                <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Умови торгівлі для {selectedSession.symbol}
-                  </h3>
-                  <TradingConditions symbol={selectedSession.symbol} />
+            {selectedSession &&
+              selectedSession.id &&
+              selectedSession.status === "active" && (
+                <div className="space-y-4 md:space-y-6">
+                  <SessionStatus
+                    session={selectedSession}
+                    onRefresh={handleRefresh}
+                  />
+                  <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Умови торгівлі для {selectedSession.symbol}
+                    </h3>
+                    <TradingConditions symbol={selectedSession.symbol} />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         )}
 
@@ -231,7 +239,7 @@ function App() {
             <h2 className="text-xl font-semibold text-gray-900">
               Аналіз ринку
             </h2>
-            {selectedSession ? (
+            {selectedSession && selectedSession.symbol ? (
               <MarketAnalysis symbol={selectedSession.symbol} />
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6 md:p-8 text-center">
@@ -277,7 +285,7 @@ function App() {
             <h2 className="text-xl font-semibold text-gray-900">
               Логи торгівлі
             </h2>
-            {selectedSession ? (
+            {selectedSession && selectedSession.id ? (
               <TradingLogs
                 sessionId={selectedSession.id}
                 symbol={selectedSession.symbol}

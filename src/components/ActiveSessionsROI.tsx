@@ -20,11 +20,14 @@ const ActiveSessionsROI: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log("🔄 Завантаження ROI даних...");
       const data = await websocketService.getActiveSessionsWithROI();
       setSessions(data);
       setLastUpdate(new Date().toISOString());
+      console.log(`✅ Завантажено ${data.length} сесій ROI`);
     } catch (err: any) {
       setError(err.message || "Помилка завантаження ROI");
+      console.error("❌ Помилка завантаження ROI:", err);
     } finally {
       setLoading(false);
     }

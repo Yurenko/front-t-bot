@@ -14,10 +14,15 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
   onRefresh,
 }) => {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
+    // Перевіряємо, чи є ID сесії
+    if (!session?.id) {
+      console.warn("Session ID is undefined, skipping subscription");
+      return;
+    }
+
     // Підписуємося на оновлення угод для цієї сесії
     websocketService.subscribeToTrades(session.id.toString());
 
@@ -26,31 +31,49 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       setTrades(data);
     });
 
-    loadTrades();
+    const loadTradesData = async () => {
+      if (!session?.id) {
+        console.warn("Session ID is undefined, cannot load trades");
+        return;
+      }
+
+      try {
+        console.log("Loading trades for session ID:", session.id);
+        const data = await websocketService.getSessionTrades(
+          session.id.toString()
+        );
+        setTrades(data);
+      } catch (error) {
+        console.error("Помилка завантаження угод:", error);
+      }
+    };
+
+    loadTradesData();
 
     return () => {
-      websocketService.unsubscribeFromTrades(session.id.toString());
+      if (session?.id) {
+        websocketService.unsubscribeFromTrades(session.id.toString());
+      }
     };
-  }, [session.id]);
+  }, [session?.id]);
 
-  const loadTrades = async () => {
-    try {
-      console.log("Loading trades for session ID:", session.id);
-      const data = await websocketService.getSessionTrades(
-        session.id.toString()
-      );
-      setTrades(data);
-    } catch (error) {
-      console.error("Помилка завантаження угод:", error);
-    }
-  };
+  // Перевіряємо, чи сесія має всі необхідні дані
+  if (!session || !session.id) {
+    console.error("Session is invalid:", session);
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="text-center text-red-600">
+          ❌ Помилка: Невірні дані сесії
+        </div>
+      </div>
+    );
+  }
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
       await websocketService.analyzeAndTrade(session.symbol);
       onRefresh();
-      await loadTrades();
     } catch (error) {
       console.error("Помилка аналізу:", error);
     } finally {
@@ -102,10 +125,6 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
       style: "currency",
       currency: "USD",
     }).format(amount);
-  };
-
-  const formatPercentage = (value: number) => {
-    return `${(value * 100).toFixed(2)}%`;
   };
 
   const calculateCurrentROI = () => {

@@ -29,6 +29,12 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
+    // Перевіряємо, чи є необхідні дані сесії
+    if (!session?.id || !session?.symbol) {
+      console.warn("Session ID or symbol is undefined, skipping subscription");
+      return;
+    }
+
     // Підписуємося на оновлення сесії
     websocketService.subscribeToSessions();
 
@@ -55,9 +61,23 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
 
     return () => {
       websocketService.unsubscribeFromSessions();
-      websocketService.unsubscribeFromMarketAnalysis(session.symbol);
+      if (session?.symbol) {
+        websocketService.unsubscribeFromMarketAnalysis(session.symbol);
+      }
     };
-  }, [session.id]);
+  }, [session?.id, session?.symbol]);
+
+  // Перевіряємо, чи сесія має всі необхідні дані
+  if (!session || !session.id || !session.symbol) {
+    console.error("Session is invalid:", session);
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="text-center text-red-600">
+          ❌ Помилка: Невірні дані сесії
+        </div>
+      </div>
+    );
+  }
 
   const loadStatus = async () => {
     setLoading(true);

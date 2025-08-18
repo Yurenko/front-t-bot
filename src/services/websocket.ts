@@ -27,6 +27,19 @@ class WebSocketService extends EventEmitter {
     { resolve: Function; reject: Function }
   >();
 
+  // Кеш для зменшення запитів
+  private cache = new Map<
+    string,
+    { data: any; timestamp: number; ttl: number }
+  >();
+  private readonly DEFAULT_CACHE_TTL = 5000; // 5 секунд
+  private readonly SESSIONS_CACHE_TTL = 3000; // 3 секунди для сесій
+  private readonly ROI_CACHE_TTL = 2000; // 2 секунди для ROI
+
+  // Дебаунсинг для запобігання зайвих запитів
+  private debounceTimers = new Map<string, NodeJS.Timeout>();
+  private readonly DEBOUNCE_DELAY = 1000; // 1 секунда
+
   constructor() {
     super();
     this.setMaxListeners(100);
@@ -40,6 +53,80 @@ class WebSocketService extends EventEmitter {
         });
       }
     }, 30000); // Перевіряємо кожні 30 секунд
+
+    // Очищення застарілого кешу кожні 30 секунд
+    setInterval(() => {
+      this.cleanupCache();
+    }, 30000);
+  }
+
+  // Метод для очищення застарілого кешу
+  private cleanupCache(): void {
+    const now = Date.now();
+    for (const [key, value] of this.cache.entries()) {
+      if (now - value.timestamp > value.ttl) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  // Метод для отримання даних з кешу
+  private getFromCache<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      console.log(`📡 Отримано з кешу: ${key}`);
+      return cached.data as T;
+    }
+    return null;
+  }
+
+  // Метод для збереження даних в кеш
+  private setCache<T>(
+    key: string,
+    data: T,
+    ttl: number = this.DEFAULT_CACHE_TTL
+  ): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl,
+    });
+  }
+
+  // Метод для дебаунсингу запитів
+  private debounceRequest<T>(
+    key: string,
+    requestFn: () => Promise<T>,
+    ttl: number = this.DEFAULT_CACHE_TTL
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      // Спочатку перевіряємо кеш
+      const cached = this.getFromCache<T>(key);
+      if (cached) {
+        resolve(cached);
+        return;
+      }
+
+      // Перевіряємо, чи є вже активний дебаунс таймер
+      if (this.debounceTimers.has(key)) {
+        clearTimeout(this.debounceTimers.get(key)!);
+      }
+
+      // Встановлюємо новий дебаунс таймер
+      const timer = setTimeout(async () => {
+        try {
+          const result = await requestFn();
+          this.setCache(key, result, ttl);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        } finally {
+          this.debounceTimers.delete(key);
+        }
+      }, this.DEBOUNCE_DELAY);
+
+      this.debounceTimers.set(key, timer);
+    });
   }
 
   async connect(): Promise<void> {
@@ -295,40 +382,48 @@ class WebSocketService extends EventEmitter {
 
   // API методи через Socket.IO або REST
   async getAllSessions(): Promise<TradingSession[]> {
-    if (this.useWebSocket && this.isConnected) {
-      try {
-        return await this.sendRequest("getAllSessions");
-      } catch (error: any) {
-        console.warn(
-          "Помилка WebSocket запиту, переключаємося на REST API:",
-          error
-        );
-        // Спробуємо перепідключитися перед переключенням на REST API
-        if (
-          error.message === "Request timeout" ||
-          error.message === "Socket.IO не підключений"
-        ) {
-          console.log("🔄 Спроба перепідключення WebSocket...");
+    const cacheKey = "all-sessions";
+
+    return this.debounceRequest(
+      cacheKey,
+      async () => {
+        if (this.useWebSocket && this.isConnected) {
           try {
-            await this.connect();
-            if (this.isConnected) {
-              console.log("✅ WebSocket перепідключений, повторюємо запит");
-              return await this.sendRequest("getAllSessions");
-            }
-          } catch (reconnectError) {
+            return await this.sendRequest("getAllSessions");
+          } catch (error: any) {
             console.warn(
-              "❌ Не вдалося перепідключити WebSocket:",
-              reconnectError
+              "Помилка WebSocket запиту, переключаємося на REST API:",
+              error
             );
+            // Спробуємо перепідключитися перед переключенням на REST API
+            if (
+              error.message === "Request timeout" ||
+              error.message === "Socket.IO не підключений"
+            ) {
+              console.log("🔄 Спроба перепідключення WebSocket...");
+              try {
+                await this.connect();
+                if (this.isConnected) {
+                  console.log("✅ WebSocket перепідключений, повторюємо запит");
+                  return await this.sendRequest("getAllSessions");
+                }
+              } catch (reconnectError) {
+                console.warn(
+                  "❌ Не вдалося перепідключити WebSocket:",
+                  reconnectError
+                );
+              }
+            }
+            this.useWebSocket = false;
           }
         }
-        this.useWebSocket = false;
-      }
-    }
 
-    const response = await fetch(`${API_BASE_URL}/trading/sessions`);
-    if (!response.ok) throw new Error("Помилка завантаження сесій");
-    return response.json();
+        const response = await fetch(`${API_BASE_URL}/trading/sessions`);
+        if (!response.ok) throw new Error("Помилка завантаження сесій");
+        return response.json();
+      },
+      this.SESSIONS_CACHE_TTL
+    );
   }
 
   async getSessionStatus(symbol: string): Promise<TradingSession> {
@@ -625,21 +720,32 @@ class WebSocketService extends EventEmitter {
   }
 
   async getActiveSessionsWithROI(): Promise<any[]> {
-    if (this.useWebSocket && this.isConnected) {
-      try {
-        return await this.sendRequest("getActiveSessionsWithROI");
-      } catch (error) {
-        console.warn(
-          "Помилка WebSocket запиту, переключаємося на REST API:",
-          error
-        );
-        this.useWebSocket = false;
-      }
-    }
+    const cacheKey = "active-sessions-roi";
 
-    const response = await fetch(`${API_BASE_URL}/trading/active-sessions-roi`);
-    if (!response.ok) throw new Error("Помилка завантаження активних сесій");
-    return response.json();
+    return this.debounceRequest(
+      cacheKey,
+      async () => {
+        if (this.useWebSocket && this.isConnected) {
+          try {
+            return await this.sendRequest("getActiveSessionsWithROI");
+          } catch (error) {
+            console.warn(
+              "Помилка WebSocket запиту, переключаємося на REST API:",
+              error
+            );
+            this.useWebSocket = false;
+          }
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/trading/active-sessions-roi`
+        );
+        if (!response.ok)
+          throw new Error("Помилка завантаження активних сесій");
+        return response.json();
+      },
+      this.ROI_CACHE_TTL
+    );
   }
 
   async getActivePositionsCount(): Promise<number> {
@@ -711,6 +817,23 @@ class WebSocketService extends EventEmitter {
       usingWebSocket: this.useWebSocket,
       reconnectAttempts: this.reconnectAttempts,
       subscriptions: this.subscriptions.size,
+    };
+  }
+
+  // Метод для очищення кешу
+  clearCache(): void {
+    this.cache.clear();
+    console.log("🧹 Кеш WebSocket очищено");
+  }
+
+  // Метод для отримання статусу кешу
+  getCacheStatus(): {
+    cacheSize: number;
+    debounceTimersSize: number;
+  } {
+    return {
+      cacheSize: this.cache.size,
+      debounceTimersSize: this.debounceTimers.size,
     };
   }
 }
