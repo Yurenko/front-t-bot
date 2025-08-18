@@ -90,7 +90,12 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
         let unrealizedPnL = 0;
         let roi = 0;
 
-        if (entryPrice && positionSize > 0) {
+        if (
+          entryPrice &&
+          entryPrice > 0 &&
+          positionSize > 0 &&
+          currentPrice > 0
+        ) {
           const priceChange = (currentPrice - entryPrice) / entryPrice;
           unrealizedPnL = priceChange * positionSize * currentPrice; // 3x leverage
           roi = priceChange * 3; // 3x leverage
@@ -98,7 +103,7 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
 
         // Розраховуємо відстань до ліквідації
         let distanceToLiquidation = 0;
-        if (liquidationPrice) {
+        if (liquidationPrice && liquidationPrice > 0 && currentPrice > 0) {
           distanceToLiquidation =
             ((currentPrice - liquidationPrice) / liquidationPrice) * 100;
         }
@@ -247,13 +252,15 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                   status.unrealizedPnL
                 )}`}
               >
-                {formatCurrency(status.unrealizedPnL)}
+                {isNaN(status.unrealizedPnL)
+                  ? "$0.00"
+                  : formatCurrency(status.unrealizedPnL)}
               </p>
             </div>
             <div className="bg-yellow-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-yellow-600 mb-1">ROI</h4>
               <p className={`text-lg font-bold ${getPnLColor(status.roi)}`}>
-                {formatPercentage(status.roi)}
+                {isNaN(status.roi) ? "0.00%" : formatPercentage(status.roi)}
               </p>
             </div>
             <div className="bg-purple-50 p-3 rounded-lg">
@@ -318,7 +325,9 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                       (status.entryPrice || status.currentPrice)
                   )}`}
                 >
-                  {status.entryPrice
+                  {status.entryPrice &&
+                  status.entryPrice > 0 &&
+                  status.currentPrice > 0
                     ? formatPercentage(
                         (status.currentPrice - status.entryPrice) /
                           status.entryPrice
@@ -334,9 +343,9 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                       status.distanceToLiquidation
                     )}`}
                   >
-                    {status.distanceToLiquidation
-                      ? status.distanceToLiquidation.toFixed(2)
-                      : "0.00"}
+                    {isNaN(status.distanceToLiquidation)
+                      ? "0.00"
+                      : status.distanceToLiquidation.toFixed(2)}
                     %
                   </span>
                 </div>
@@ -380,13 +389,21 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-gray-600 mb-1">SMA 20</h4>
               <p className="text-sm font-semibold text-gray-900">
-                ${(status.marketAnalysis.indicators.sma20 || 0).toFixed(4)}
+                $
+                {status.marketAnalysis.indicators.sma20 &&
+                status.marketAnalysis.indicators.sma20 > 0
+                  ? status.marketAnalysis.indicators.sma20.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-gray-600 mb-1">ATR</h4>
               <p className="text-sm font-semibold text-gray-900">
-                ${(status.marketAnalysis.indicators.atr || 0).toFixed(4)}
+                $
+                {status.marketAnalysis.indicators.atr &&
+                status.marketAnalysis.indicators.atr > 0
+                  ? status.marketAnalysis.indicators.atr.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
           </div>
@@ -398,13 +415,21 @@ const LiveTradingStatus: React.FC<LiveTradingStatusProps> = ({ session }) => {
                 Підтримка
               </h4>
               <p className="text-sm font-semibold text-green-900">
-                ${(status.marketAnalysis.supportLevel || 0).toFixed(4)}
+                $
+                {status.marketAnalysis.supportLevel &&
+                status.marketAnalysis.supportLevel > 0
+                  ? status.marketAnalysis.supportLevel.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
             <div className="bg-red-50 p-3 rounded-lg">
               <h4 className="text-xs font-medium text-red-600 mb-1">Опір</h4>
               <p className="text-sm font-semibold text-red-900">
-                ${(status.marketAnalysis.resistanceLevel || 0).toFixed(4)}
+                $
+                {status.marketAnalysis.resistanceLevel &&
+                status.marketAnalysis.resistanceLevel > 0
+                  ? status.marketAnalysis.resistanceLevel.toFixed(4)
+                  : "0.0000"}
               </p>
             </div>
           </div>

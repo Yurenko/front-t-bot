@@ -179,7 +179,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                 </div>
                 <div className="text-right">
                   <p className="text-lg md:text-xl font-bold text-gray-900">
-                    ${item.currentPrice.toFixed(4)}
+                    $
+                    {item.currentPrice && item.currentPrice > 0
+                      ? item.currentPrice.toFixed(4)
+                      : "0.0000"}
                   </p>
                   <span
                     className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getVolatilityColor(
@@ -240,19 +243,28 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                   <div className="bg-red-50 p-2 rounded">
                     <span className="text-red-600 font-medium">Верхня</span>
                     <p className="text-red-900">
-                      ${item.indicators.bbUpper.toFixed(4)}
+                      $
+                      {item.indicators.bbUpper && item.indicators.bbUpper > 0
+                        ? item.indicators.bbUpper.toFixed(4)
+                        : "0.0000"}
                     </p>
                   </div>
                   <div className="bg-blue-50 p-2 rounded">
                     <span className="text-blue-600 font-medium">Середня</span>
                     <p className="text-blue-900">
-                      ${item.indicators.bbMiddle.toFixed(4)}
+                      $
+                      {item.indicators.bbMiddle && item.indicators.bbMiddle > 0
+                        ? item.indicators.bbMiddle.toFixed(4)
+                        : "0.0000"}
                     </p>
                   </div>
                   <div className="bg-green-50 p-2 rounded">
                     <span className="text-green-600 font-medium">Нижня</span>
                     <p className="text-green-900">
-                      ${item.indicators.bbLower.toFixed(4)}
+                      $
+                      {item.indicators.bbLower && item.indicators.bbLower > 0
+                        ? item.indicators.bbLower.toFixed(4)
+                        : "0.0000"}
                     </p>
                   </div>
                 </div>
@@ -265,7 +277,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     Підтримка
                   </h4>
                   <p className="text-sm font-semibold text-green-900">
-                    ${item.supportLevel.toFixed(4)}
+                    $
+                    {item.supportLevel && item.supportLevel > 0
+                      ? item.supportLevel.toFixed(4)
+                      : "0.0000"}
                   </p>
                 </div>
                 <div className="bg-red-50 p-3 rounded-lg">
@@ -273,7 +288,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     Опір
                   </h4>
                   <p className="text-sm font-semibold text-red-900">
-                    ${item.resistanceLevel.toFixed(4)}
+                    $
+                    {item.resistanceLevel && item.resistanceLevel > 0
+                      ? item.resistanceLevel.toFixed(4)
+                      : "0.0000"}
                   </p>
                 </div>
               </div>

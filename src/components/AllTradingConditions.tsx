@@ -223,11 +223,16 @@ const AllTradingConditions: React.FC<AllTradingConditionsProps> = ({
       description: "Ринок в стані консолідації (низька волатильність)",
       isMet: analysis.consolidation,
       value: analysis.consolidation ? "✅ Консолідація" : "❌ Тренд",
-      details: `Діапазон цін: ${(
-        ((analysis.resistanceLevel - analysis.supportLevel) /
-          analysis.currentPrice) *
-        100
-      ).toFixed(2)}%`,
+      details: `Діапазон цін: ${
+        analysis.resistanceLevel > analysis.supportLevel &&
+        analysis.currentPrice > 0
+          ? (
+              ((analysis.resistanceLevel - analysis.supportLevel) /
+                analysis.currentPrice) *
+              100
+            ).toFixed(2)
+          : "0.00"
+      }%`,
     });
 
     // 2. Позиція в коридорі
@@ -247,11 +252,15 @@ const AllTradingConditions: React.FC<AllTradingConditionsProps> = ({
       value: isInLowerThird(analysis)
         ? "✅ В нижній третині"
         : "❌ Не в нижній третині",
-      details: `Позиція: ${(
-        ((analysis.currentPrice - analysis.supportLevel) /
-          (analysis.resistanceLevel - analysis.supportLevel)) *
-        100
-      ).toFixed(1)}% від діапазону`,
+      details: `Позиція: ${
+        analysis.resistanceLevel > analysis.supportLevel
+          ? (
+              ((analysis.currentPrice - analysis.supportLevel) /
+                (analysis.resistanceLevel - analysis.supportLevel)) *
+              100
+            ).toFixed(1)
+          : "0.0"
+      }% від діапазону`,
     });
 
     // 3. Волатильність

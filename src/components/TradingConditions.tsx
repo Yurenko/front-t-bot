@@ -40,11 +40,14 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
         description: "Ринок в стані консолідації (низька волатильність)",
         weight: 35,
         details: `Діапазон цін: ${
-          (
-            ((analysis.resistanceLevel - analysis.supportLevel) /
-              analysis.currentPrice) *
-            100
-          ).toFixed(2) || "0.00"
+          analysis.resistanceLevel > analysis.supportLevel &&
+          analysis.currentPrice > 0
+            ? (
+                ((analysis.resistanceLevel - analysis.supportLevel) /
+                  analysis.currentPrice) *
+                100
+              ).toFixed(2)
+            : "0.00"
         }%`,
         value: analysis.consolidation ? "✅ Консолідація" : "❌ Тренд",
       },
@@ -54,11 +57,13 @@ const TradingConditions: React.FC<TradingConditionsProps> = ({ symbol }) => {
         description: "Ціна в нижній третині коридору",
         weight: 30,
         details: `Позиція: ${
-          (
-            ((analysis.currentPrice - analysis.supportLevel) /
-              (analysis.resistanceLevel - analysis.supportLevel)) *
-            100
-          ).toFixed(1) || "0.0"
+          analysis.resistanceLevel > analysis.supportLevel
+            ? (
+                ((analysis.currentPrice - analysis.supportLevel) /
+                  (analysis.resistanceLevel - analysis.supportLevel)) *
+                100
+              ).toFixed(1)
+            : "0.0"
         }% від діапазону`,
         value: isInLowerThird(analysis)
           ? "✅ В нижній третині"
