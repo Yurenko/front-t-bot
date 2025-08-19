@@ -291,7 +291,10 @@ class WebSocketService extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       const requestId =
-        Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        Date.now().toString() + 
+        Math.random().toString(36).substr(2, 9) + 
+        Math.random().toString(36).substr(2, 9) + 
+        performance.now().toString().replace('.', '');
 
       this.pendingRequests.set(requestId, { resolve, reject });
 
@@ -301,6 +304,7 @@ class WebSocketService extends EventEmitter {
         params,
       };
 
+      console.log(`📡 Відправка WebSocket запиту: ${method} (ID: ${requestId})`);
       this.socket!.emit("message", JSON.stringify(message));
 
       // Таймаут для запиту
