@@ -28,6 +28,9 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
 
     // Слухаємо оновлення угод
     websocketService.on(`trades_${session.id}`, (data: Trade[]) => {
+      console.log(
+        `WebSocket update for ${session.symbol}: ${data.length} trades`
+      );
       setTrades(data);
     });
 
@@ -42,9 +45,14 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
         const data = await websocketService.getSessionTrades(
           session.id.toString()
         );
+        console.log(
+          `Loaded ${data.length} trades for ${session.symbol}:`,
+          data
+        );
         setTrades(data);
       } catch (error) {
         console.error("Помилка завантаження угод:", error);
+        setTrades([]); // Встановлюємо порожній масив при помилці
       }
     };
 
@@ -307,6 +315,12 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
         <h3 className="text-base md:text-lg font-semibold mb-3">
           Останні угоди
         </h3>
+        {(() => {
+          console.log(
+            `Rendering trades for ${session.symbol}: ${trades.length} trades`
+          );
+          return null;
+        })()}
         {trades.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -373,7 +387,16 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
             </table>
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">Немає угод для цієї сесії</p>
+          <div className="text-center py-4">
+            <p className="text-gray-500 text-sm mb-2">
+              Немає угод для цієї сесії
+            </p>
+            <p className="text-gray-400 text-xs">
+              {session.status === "active"
+                ? "Угоди з'являться після відкриття позиції"
+                : "Сесія не має торгової історії"}
+            </p>
+          </div>
         )}
       </div>
     </div>
