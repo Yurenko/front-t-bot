@@ -69,6 +69,16 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
     );
   }
 
+  // Додаємо діагностику даних сесії
+  console.log("SessionStatus - дані сесії:", {
+    symbol: session.symbol,
+    initialBalance: session.initialBalance,
+    currentBalance: session.currentBalance,
+    tradingBalance: session.tradingBalance,
+    reserveBalance: session.reserveBalance,
+    totalPnL: session.totalPnL,
+  });
+
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
@@ -186,7 +196,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
             Початковий баланс
           </h3>
           <p className="text-base md:text-xl font-bold text-gray-900">
-            {formatCurrency(session.initialBalance)}
+            {formatCurrency(session.initialBalance || 0)}
           </p>
         </div>
 
@@ -195,7 +205,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
             Поточний баланс
           </h3>
           <p className="text-base md:text-xl font-bold text-gray-900">
-            {formatCurrency(session.currentBalance)}
+            {formatCurrency(session.currentBalance || 0)}
           </p>
         </div>
 
@@ -208,7 +218,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
               session.totalPnL >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
-            {formatCurrency(session.totalPnL)}
+            {formatCurrency(session.totalPnL || 0)}
           </p>
         </div>
 
@@ -234,13 +244,13 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Торговий баланс:</span>
               <span className="font-medium">
-                {formatCurrency(session.tradingBalance)}
+                {formatCurrency(session.tradingBalance || 0)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Резервний баланс:</span>
               <span className="font-medium">
-                {formatCurrency(session.reserveBalance)}
+                {formatCurrency(session.reserveBalance || 0)}
               </span>
             </div>
           </div>

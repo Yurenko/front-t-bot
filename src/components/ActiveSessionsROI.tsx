@@ -7,7 +7,6 @@ const ActiveSessionsROI: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>("");
-  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 

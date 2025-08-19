@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MarketAnalysis, TradingSession } from "../services/api";
 import { websocketService } from "../services/websocket";
 
@@ -13,6 +13,91 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
   const [activeSessions, setActiveSessions] = useState<TradingSession[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState(symbol);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "disconnected" | "connecting"
+  >("connecting");
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
+  const [cacheTimeout] = useState(60000); // 60 секунд кешування
+
+  const loadAnalysis = useCallback(async () => {
+    // Перевіряємо кеш - якщо дані недавно оновлювалися, не робимо новий запит
+    const now = Date.now();
+    if (analysis.length > 0 && now - lastUpdateTime < cacheTimeout) {
+      console.log(
+        `📊 Використовуємо кешовані дані для ${selectedSymbol} (останнє оновлення: ${Math.round(
+          (now - lastUpdateTime) / 1000
+        )}с тому)`
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      // Спочатку пробуємо WebSocket
+      let data;
+      try {
+        data = await websocketService.getMarketAnalysis(selectedSymbol);
+        console.log(
+          `📊 Отримано дані через WebSocket для ${selectedSymbol}:`,
+          data
+        );
+      } catch (wsError) {
+        console.warn(
+          `⚠️ WebSocket помилка для ${selectedSymbol}, переключаємося на REST API:`,
+          wsError
+        );
+        // Fallback на REST API
+        const response = await fetch(
+          `/api/trading/market/analysis/${selectedSymbol}`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        data = await response.json();
+        console.log(
+          `📊 Отримано дані через REST API для ${selectedSymbol}:`,
+          data
+        );
+      }
+
+      // Перевіряємо чи дані не пусті або не містять тільки нулі
+      if (!data || data.length === 0) {
+        throw new Error("Немає даних для відображення");
+      }
+
+      // Перевіряємо чи всі значення не нулі
+      const hasValidData = data.some((item: any) => {
+        return (
+          item &&
+          ((item.currentPrice && item.currentPrice > 0) ||
+            (item.indicators &&
+              (item.indicators.sma20 > 0 ||
+                item.indicators.sma50 > 0 ||
+                item.indicators.rsi > 0)))
+        );
+      });
+
+      if (!hasValidData) {
+        console.warn(
+          `⚠️ Дані для ${selectedSymbol} містять тільки нулі або невалідні значення:`,
+          data
+        );
+        throw new Error("Отримано невалідні дані (нулі)");
+      }
+
+      setAnalysis(data);
+      setLastUpdateTime(Date.now()); // Оновлюємо час останнього оновлення
+    } catch (err: any) {
+      console.error(
+        `❌ Помилка завантаження аналізу для ${selectedSymbol}:`,
+        err
+      );
+      setError(err.message || "Помилка завантаження аналізу");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSymbol, analysis.length, lastUpdateTime, cacheTimeout]);
 
   useEffect(() => {
     // Підписуємося на оновлення аналізу ринку для цього символу
@@ -35,6 +120,22 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
       setActiveSessions(active);
     });
 
+    // Слухаємо стан з'єднання
+    websocketService.on("connect", () => {
+      setConnectionStatus("connected");
+    });
+
+    websocketService.on("disconnect", () => {
+      setConnectionStatus("disconnected");
+    });
+
+    // Перевіряємо поточний стан з'єднання
+    if (websocketService.isWebSocketConnected()) {
+      setConnectionStatus("connected");
+    } else {
+      setConnectionStatus("disconnected");
+    }
+
     loadAnalysis();
     loadActiveSessions();
 
@@ -46,20 +147,23 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
 
   useEffect(() => {
     setSelectedSymbol(symbol);
+    // Автоматично завантажуємо аналіз коли змінюється символ
+    if (symbol && symbol !== selectedSymbol) {
+      loadAnalysis();
+    }
   }, [symbol]);
 
-  const loadAnalysis = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await websocketService.getMarketAnalysis(selectedSymbol);
-      setAnalysis(data);
-    } catch (err: any) {
-      setError(err.message || "Помилка завантаження аналізу");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Автоматичне оновлення даних
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log(`🔄 Автоматичне оновлення аналізу для ${selectedSymbol}`);
+      loadAnalysis();
+    }, 60000); // 60 секунд (збільшуємо для зменшення навантаження на API)
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, selectedSymbol, loadAnalysis]);
 
   const loadActiveSessions = async () => {
     try {
@@ -86,12 +190,12 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // const formatCurrency = (amount: number) => {
+  //   return new Intl.NumberFormat("en-US", {
+  //     style: "currency",
+  //     currency: "USD",
+  //   }).format(amount);
+  // };
 
   const formatPercentage = (value: number) => {
     return `${(value * 100).toFixed(2)}%`;
@@ -116,7 +220,20 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
     return (
       <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium">
+                Помилка завантаження аналізу
+              </h3>
+              <p className="text-sm mt-1">{error}</p>
+            </div>
+            <button
+              onClick={loadAnalysis}
+              className="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Спробувати знову
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -155,6 +272,38 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
               <label htmlFor="autoRefresh" className="text-sm text-gray-700">
                 Автооновлення
               </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={loadAnalysis}
+                disabled={loading}
+                className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Оновлення..." : "Оновити"}
+              </button>
+              <div className="flex items-center space-x-1">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    connectionStatus === "connected"
+                      ? "bg-green-500"
+                      : connectionStatus === "connecting"
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                  }`}
+                ></div>
+                <span className="text-xs text-gray-500">
+                  {connectionStatus === "connected"
+                    ? "WebSocket"
+                    : connectionStatus === "connecting"
+                    ? "Підключення..."
+                    : "REST API"}
+                </span>
+                {lastUpdateTime > 0 && (
+                  <span className="text-xs text-gray-400">
+                    {Math.round((Date.now() - lastUpdateTime) / 1000)}с тому
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -205,7 +354,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     SMA 20
                   </h4>
                   <p className="text-sm font-semibold text-gray-900">
-                    ${item.indicators.sma20.toFixed(4)}
+                    $
+                    {item.indicators.sma20 && item.indicators.sma20 > 0
+                      ? item.indicators.sma20.toFixed(4)
+                      : "0.0000"}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -213,7 +365,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     SMA 50
                   </h4>
                   <p className="text-sm font-semibold text-gray-900">
-                    ${item.indicators.sma50.toFixed(4)}
+                    $
+                    {item.indicators.sma50 && item.indicators.sma50 > 0
+                      ? item.indicators.sma50.toFixed(4)
+                      : "0.0000"}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -221,7 +376,9 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     RSI
                   </h4>
                   <p className="text-sm font-semibold text-gray-900">
-                    {item.indicators.rsi.toFixed(2)}
+                    {item.indicators.rsi && item.indicators.rsi > 0
+                      ? item.indicators.rsi.toFixed(2)
+                      : "0.00"}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -229,7 +386,10 @@ const MarketAnalysisComponent: React.FC<MarketAnalysisProps> = ({ symbol }) => {
                     ATR
                   </h4>
                   <p className="text-sm font-semibold text-gray-900">
-                    ${item.indicators.atr.toFixed(4)}
+                    $
+                    {item.indicators.atr && item.indicators.atr > 0
+                      ? item.indicators.atr.toFixed(4)
+                      : "0.0000"}
                   </p>
                 </div>
               </div>

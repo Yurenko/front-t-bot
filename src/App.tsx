@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import SessionInitializer from "./components/SessionInitializer";
 import SessionStatus from "./components/SessionStatus";
@@ -23,8 +23,45 @@ function App() {
   const [activeTab, setActiveTab] = useState<
     "sessions" | "analysis" | "conditions" | "logs" | "new" | "balance" | "roi"
   >("sessions");
-  const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      console.log("🔄 Завантаження сесій через REST API...");
+      const data = await websocketService.getAllSessions();
+      console.log(`📊 Завантажено ${data.length} сесій`);
+
+      // Додаємо діагностику першої сесії
+      if (data.length > 0) {
+        console.log("📊 Перша сесія з REST API:", {
+          symbol: data[0].symbol,
+          initialBalance: data[0].initialBalance,
+          currentBalance: data[0].currentBalance,
+          tradingBalance: data[0].tradingBalance,
+          reserveBalance: data[0].reserveBalance,
+        });
+      }
+
+      setSessions(data);
+
+      // Вибираємо першу активну сесію, якщо немає обраної
+      if (data.length > 0 && !selectedSession) {
+        const activeSession = data.find(
+          (session) => session.status === "active"
+        );
+        if (activeSession) {
+          console.log("📊 Вибрана активна сесія:", activeSession.symbol);
+          setSelectedSession(activeSession);
+        } else if (data.length > 0) {
+          // Якщо немає активних, вибираємо першу для показу
+          console.log("📊 Вибрана перша сесія:", data[0].symbol);
+          setSelectedSession(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Помилка завантаження сесій:", error);
+    }
+  }, [selectedSession]);
 
   useEffect(() => {
     console.log("🚀 Ініціалізація додатку...");
@@ -38,12 +75,29 @@ function App() {
     // Слухаємо оновлення сесій
     websocketService.on("sessions", (data: TradingSession[]) => {
       console.log(`📡 Отримано оновлення сесій: ${data.length} сесій`);
+
+      // Додаємо діагностику першої сесії
+      if (data.length > 0) {
+        console.log("📊 Перша сесія з WebSocket:", {
+          symbol: data[0].symbol,
+          initialBalance: data[0].initialBalance,
+          currentBalance: data[0].currentBalance,
+          tradingBalance: data[0].tradingBalance,
+          reserveBalance: data[0].reserveBalance,
+        });
+      }
+
       setSessions(data);
 
       // Оновлюємо обрану сесію, якщо вона є в оновлених даних
       if (selectedSession && selectedSession.id) {
         const updatedSession = data.find((s) => s.id === selectedSession.id);
         if (updatedSession) {
+          console.log("📊 Оновлення обраної сесії:", {
+            symbol: updatedSession.symbol,
+            initialBalance: updatedSession.initialBalance,
+            currentBalance: updatedSession.currentBalance,
+          });
           setSelectedSession(updatedSession);
         }
       }
@@ -58,32 +112,7 @@ function App() {
       websocketService.unsubscribeFromSessions();
       websocketService.disconnect();
     };
-  }, []);
-
-  const loadSessions = async () => {
-    setLoading(true);
-    try {
-      const data = await websocketService.getAllSessions();
-      setSessions(data);
-
-      // Вибираємо першу активну сесію, якщо немає обраної
-      if (data.length > 0 && !selectedSession) {
-        const activeSession = data.find(
-          (session) => session.status === "active"
-        );
-        if (activeSession) {
-          setSelectedSession(activeSession);
-        } else if (data.length > 0) {
-          // Якщо немає активних, вибираємо першу для показу
-          setSelectedSession(data[0]);
-        }
-      }
-    } catch (error) {
-      console.error("Помилка завантаження сесій:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [selectedSession, loadSessions]);
 
   const handleSessionCreated = (session: TradingSession) => {
     setSessions((prev) => [session, ...prev]);
