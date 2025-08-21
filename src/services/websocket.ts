@@ -44,6 +44,10 @@ class WebSocketService extends EventEmitter {
     super();
     this.setMaxListeners(100);
 
+    // Очищаємо кеш при ініціалізації
+    this.clearCache();
+    console.log("🧹 Кеш WebSocket очищено при ініціалізації");
+
     // Періодична перевірка стану з'єднання
     setInterval(() => {
       if (this.useWebSocket && (!this.isConnected || !this.socket?.connected)) {
@@ -142,12 +146,14 @@ class WebSocketService extends EventEmitter {
         this.socket = io(WEBSOCKET_URL, {
           path: "/ws",
           transports: ["websocket", "polling"],
-          timeout: 10000,
+          timeout: 30000,
           forceNew: true,
           reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 2000,
+          reconnectionDelayMax: 10000,
+          upgrade: true,
+          rememberUpgrade: true,
         });
 
         // Таймаут для підключення
@@ -162,7 +168,7 @@ class WebSocketService extends EventEmitter {
             this.socket = null;
           }
           resolve(); // Резолвимо проміс, щоб додаток продовжив роботу
-        }, 10000);
+        }, 30000);
 
         this.socket.on("connect", () => {
           console.log("✅ Socket.IO підключений");
@@ -170,6 +176,11 @@ class WebSocketService extends EventEmitter {
           this.isConnected = true;
           this.useWebSocket = true;
           this.reconnectAttempts = 0;
+
+          // Очищаємо кеш при підключенні
+          this.clearCache();
+          console.log("🧹 Кеш очищено при підключенні WebSocket");
+
           resolve();
         });
 
@@ -197,7 +208,10 @@ class WebSocketService extends EventEmitter {
         this.socket.on("message", (data: any) => {
           try {
             console.log("📡 Отримано Socket.IO повідомлення:", data);
-            this.handleMessage(data);
+            // Дані можуть приходити як об'єкт або як JSON рядок
+            const parsedData =
+              typeof data === "string" ? JSON.parse(data) : data;
+            this.handleMessage(parsedData);
           } catch (error) {
             console.error("Помилка обробки Socket.IO повідомлення:", error);
           }
@@ -239,8 +253,15 @@ class WebSocketService extends EventEmitter {
     }
 
     // Обробка broadcast повідомлень
-    if (data.type && data.data) {
-      this.emit(data.type, data.data);
+    if (data.type) {
+      if (data.type === "connected") {
+        console.log("✅ Отримано підтвердження підключення");
+        return;
+      }
+
+      if (data.data) {
+        this.emit(data.type, data.data);
+      }
     }
   }
 
