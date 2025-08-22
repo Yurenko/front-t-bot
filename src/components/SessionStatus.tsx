@@ -336,7 +336,7 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
                     Ціна
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Кількість
+                    Кількість/Сума
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     P&L
@@ -351,6 +351,8 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
                         ? "Вхід"
                         : trade.type === "averaging"
                         ? "Усереднення"
+                        : trade.type === "margin_add"
+                        ? "Додавання маржі"
                         : "Вихід"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
@@ -368,7 +370,13 @@ const SessionStatus: React.FC<SessionStatusProps> = ({
                       ${trade.price ? trade.price.toFixed(4) : "0.0000"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
-                      {trade.quantity ? trade.quantity.toFixed(4) : "0.0000"}
+                      {trade.type === "margin_add"
+                        ? `$${
+                            trade.quantity ? trade.quantity.toFixed(2) : "0.00"
+                          }`
+                        : trade.quantity
+                        ? trade.quantity.toFixed(4)
+                        : "0.0000"}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       <span

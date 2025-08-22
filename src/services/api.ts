@@ -62,7 +62,7 @@ export interface TradingSession {
 export interface Trade {
   id: string;
   sessionId: string;
-  type: "entry" | "averaging" | "exit";
+  type: "entry" | "averaging" | "exit" | "margin_add";
   side: "buy" | "sell";
   price: number;
   quantity: number;

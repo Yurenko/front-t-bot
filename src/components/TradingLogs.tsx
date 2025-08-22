@@ -160,6 +160,8 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
         return "Усереднення";
       case "exit":
         return "Вихід";
+      case "margin_add":
+        return "Додавання маржі";
       default:
         return type;
     }
@@ -283,7 +285,7 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
                     Ціна
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Кількість
+                    Кількість/Сума
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     P&L
@@ -300,6 +302,8 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
                             ? "bg-blue-100 text-blue-800"
                             : trade.type === "averaging"
                             ? "bg-yellow-100 text-yellow-800"
+                            : trade.type === "margin_add"
+                            ? "bg-purple-100 text-purple-800"
                             : "bg-green-100 text-green-800"
                         }`}
                       >
@@ -321,7 +325,9 @@ const TradingLogs: React.FC<TradingLogsProps> = ({ sessionId, symbol }) => {
                       ${trade.price.toFixed(4)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
-                      {trade.quantity.toFixed(4)}
+                      {trade.type === "margin_add"
+                        ? `$${trade.quantity.toFixed(2)}`
+                        : trade.quantity.toFixed(4)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
                       <span
